@@ -1,0 +1,154 @@
+// Prisma Schema for Real-Time Hackathon Jury Evaluation Portal
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  JURY
+}
+
+enum EvaluationStatus {
+  SUBMITTED
+  UNLOCKED
+}
+
+enum TeamStatus {
+  PENDING
+  COMPLETED
+}
+
+model User {
+  id           String               @id @default(uuid())
+  name         String
+  username     String               @unique
+  passwordHash String
+  role         Role                 @default(JURY)
+  active       Boolean              @default(true)
+  venueId      String?
+  venue        Venue?               @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  assignments  JuryTeamAssignment[]
+  evaluations  Evaluation[]         @relation("JuryEvaluations")
+  unlockedLogs Evaluation[]         @relation("AdminUnlockedEvaluations")
+  auditLogs    AuditLog[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+}
+
+model Venue {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  capacity  Int      @default(50)
+  users     User[]
+  teams     Team[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProblemStatement {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  title       String
+  description String?
+  teams       Team[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Team {
+  id                 String               @id @default(uuid())
+  teamNumber         String               @unique
+  teamName           String
+  venueId            String
+  venue              Venue                @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  problemStatementId String?
+  problemStatement   ProblemStatement?    @relation(fields: [problemStatementId], references: [id], onDelete: SetNull)
+  status             TeamStatus           @default(PENDING)
+  finalScore         Float?
+  assignments        JuryTeamAssignment[]
+  evaluations        Evaluation[]
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+}
+
+model Criterion {
+  id           String   @id @default(uuid())
+  version      Int      @default(1)
+  name         String
+  maxMarks     Float
+  displayOrder Int      @default(0)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model JuryTeamAssignment {
+  id        String   @id @default(uuid())
+  juryId    String
+  jury      User     @relation(fields: [juryId], references: [id], onDelete: Cascade)
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([juryId, teamId])
+}
+
+model Evaluation {
+  id               String            @id @default(uuid())
+  teamId           String
+  team             Team              @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  juryId           String
+  jury             User              @relation("JuryEvaluations", fields: [juryId], references: [id], onDelete: Cascade)
+  status           EvaluationStatus  @default(SUBMITTED)
+  criteriaVersion  Int               @default(1)
+  totalScore       Float
+  juryComment      String?
+  submittedAt      DateTime          @default(now())
+  unlockedAt       DateTime?
+  unlockedReason   String?
+  unlockedByUserId String?
+  unlockedByUser   User?             @relation("AdminUnlockedEvaluations", fields: [unlockedByUserId], references: [id], onDelete: SetNull)
+  scores           EvaluationScore[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@unique([teamId, juryId])
+}
+
+model EvaluationScore {
+  id                String     @id @default(uuid())
+  evaluationId      String
+  evaluation        Evaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  criterionId       String
+  criterionName     String
+  criterionMaxMarks Float
+  score             Float
+  createdAt         DateTime   @default(now())
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userRole      String?
+  action        String
+  entity        String
+  entityId      String?
+  previousValue String?
+  newValue      String?
+  reason        String?
+  timestamp     DateTime @default(now())
+}
+
+model EventSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}

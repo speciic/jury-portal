@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { adminDb } from '@/lib/firebase-admin';
 import { getSession, hashPassword, verifyPassword } from '@/lib/auth';
 import { createAuditLog } from '@/lib/audit';
 
@@ -8,6 +8,10 @@ export async function POST(request: Request) {
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!adminDb) {
+      return NextResponse.json({ error: 'Database not initialized' }, { status: 500 });
     }
 
     const { currentPassword, newPassword } = await request.json();
@@ -23,13 +27,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const user = await db.user.findUnique({
-      where: { id: session.userId },
-    });
+    const userRef = adminDb.collection('users').doc(session.userId);
+    const userDoc = await userRef.get();
 
-    if (!user) {
+    if (!userDoc.exists) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
+    
+    const user = userDoc.data() as any;
 
     // Optional current password check if provided
     if (currentPassword) {
@@ -41,10 +46,7 @@ export async function POST(request: Request) {
 
     const passwordHash = await hashPassword(newPassword.trim());
 
-    await db.user.update({
-      where: { id: session.userId },
-      data: { passwordHash },
-    });
+    await userRef.update({ passwordHash, updatedAt: new Date() });
 
     await createAuditLog({
       userId: session.userId,

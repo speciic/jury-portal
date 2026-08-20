@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { adminDb } from '@/lib/firebase-admin';
 import { verifyPassword, setSessionCookie } from '@/lib/auth';
 
 export async function POST(request: Request) {
@@ -10,20 +10,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Username and password are required' }, { status: 400 });
     }
 
-    const cleanUsername = username.trim();
-    let user = await db.user.findUnique({
-      where: { username: cleanUsername.toLowerCase() },
-      include: { venue: true },
-    });
-
-    if (!user) {
-      user = await db.user.findUnique({
-        where: { username: cleanUsername },
-        include: { venue: true },
-      });
+    if (!adminDb) {
+      return NextResponse.json({ error: 'Database not initialized' }, { status: 500 });
     }
 
-    if (!user || !user.active) {
+    const cleanUsername = username.trim().toLowerCase();
+    
+    // Query users collection
+    const usersRef = adminDb.collection('users');
+    const snapshot = await usersRef.where('username', '==', cleanUsername).limit(1).get();
+    
+    // Fallback to exact match if not found (previous logic)
+    let userDoc = snapshot.empty ? null : snapshot.docs[0];
+
+    if (!userDoc) {
+      const exactSnapshot = await usersRef.where('username', '==', username.trim()).limit(1).get();
+      if (!exactSnapshot.empty) {
+        userDoc = exactSnapshot.docs[0];
+      }
+    }
+    
+    if (!userDoc) {
+      return NextResponse.json({ error: 'Invalid username or password' }, { status: 401 });
+    }
+
+    const user = { id: userDoc.id, ...userDoc.data() } as any;
+
+    if (user.active === false) { // Default to true if not set
       return NextResponse.json({ error: 'Invalid username or password' }, { status: 401 });
     }
 
@@ -32,12 +45,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid username or password' }, { status: 401 });
     }
 
+    // Fetch venue if applicable
+    let venue: any = null;
+    if (user.venueId) {
+      const venueDoc = await adminDb.collection('venues').doc(user.venueId).get();
+      if (venueDoc.exists) {
+        venue = { id: venueDoc.id, ...venueDoc.data() };
+      }
+    }
+
     const payload = {
       userId: user.id,
       username: user.username,
       name: user.name,
-      role: user.role,
-      venueId: user.venueId,
+      role: user.role || 'JURY',
+      venueId: user.venueId || null,
     };
 
     await setSessionCookie(payload);
@@ -48,8 +70,8 @@ export async function POST(request: Request) {
         id: user.id,
         name: user.name,
         username: user.username,
-        role: user.role,
-        venue: user.venue ? { id: user.venue.id, name: user.venue.name } : null,
+        role: user.role || 'JURY',
+        venue: venue ? { id: venue.id, name: venue.name } : null,
       },
     });
   } catch (error) {

@@ -1,8 +1,9 @@
 import { SignJWT, jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
-import { db } from './db';
-import { Role } from '@prisma/client';
+import { adminDb } from './firebase-admin';
+
+type Role = 'ADMIN' | 'JURY';
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'hackathon-super-secret-jwt-key-2026-production-secure'
@@ -68,27 +69,30 @@ export async function getSession(): Promise<SessionPayload | null> {
   const session = await verifySessionToken(token);
   if (!session) return null;
 
-  // Verify active user in DB
-  let user = await db.user.findUnique({
-    where: { id: session.userId },
-    select: { id: true, active: true, role: true, venueId: true, name: true, username: true },
-  });
+  if (!adminDb) return null;
 
-  if (!user && session.username) {
-    user = await db.user.findUnique({
-      where: { username: session.username },
-      select: { id: true, active: true, role: true, venueId: true, name: true, username: true },
-    });
+  // Verify active user in DB
+  let userDoc = await adminDb.collection('users').doc(session.userId).get();
+  
+  if (!userDoc.exists && session.username) {
+    const snapshot = await adminDb.collection('users').where('username', '==', session.username).limit(1).get();
+    if (!snapshot.empty) {
+      userDoc = snapshot.docs[0];
+    }
   }
 
-  if (!user || !user.active) return null;
+  if (!userDoc.exists) return null;
+  
+  const user = { id: userDoc.id, ...userDoc.data() } as any;
+
+  if (user.active === false) return null;
 
   return {
     userId: user.id,
     username: user.username,
     name: user.name,
-    role: user.role,
-    venueId: user.venueId,
+    role: user.role || 'JURY',
+    venueId: user.venueId || null,
   };
 }
 

@@ -110,7 +110,7 @@ export default function JuryDashboardPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search team by team number (e.g. HACK042) or name..."
-          className="w-full luxury-input rounded-2xl py-3.5 pl-12 pr-4 text-sm placeholder:text-slate-500 font-medium"
+          className="w-full luxury-input rounded-2xl py-3.5 !pl-12 pr-4 text-sm placeholder:text-slate-500 font-medium"
         />
       </div>
 

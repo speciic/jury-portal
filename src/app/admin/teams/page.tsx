@@ -199,7 +199,7 @@ export default function AdminTeamsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search teams by ID or name..."
-          className="w-full luxury-input py-2.5 pl-10 pr-4 text-xs sm:text-sm placeholder:text-slate-500"
+          className="w-full luxury-input py-2.5 !pl-10 pr-4 text-xs sm:text-sm placeholder:text-slate-500"
         />
       </div>
 

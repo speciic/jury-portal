@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
+import { getAuth } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -14,6 +15,7 @@ const firebaseConfig = {
 
 // Initialize Firebase only once to avoid errors during Next.js hot-reloading
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
 
 let analytics;
 if (typeof window !== 'undefined') {
@@ -24,4 +26,4 @@ if (typeof window !== 'undefined') {
   });
 }
 
-export { app, analytics };
+export { app, auth, analytics };

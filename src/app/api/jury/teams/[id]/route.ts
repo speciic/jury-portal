@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { adminDb } from '@/lib/firebase-admin';
 import { getSession } from '@/lib/auth';
 
 export async function GET(
@@ -12,65 +12,110 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await params;
-
-    // Verify jury is assigned to this team
-    const assignment = await db.juryTeamAssignment.findUnique({
-      where: {
-        juryId_teamId: {
-          juryId: session.userId,
-          teamId: id,
-        },
-      },
-      include: {
-        team: {
-          include: {
-            venue: true,
-            problemStatement: true,
-          },
-        },
-      },
-    });
-
-    if (!assignment) {
-      return NextResponse.json(
-        { error: 'Forbidden: You are not assigned to evaluate this team' },
-        { status: 403 }
-      );
+    if (!adminDb) {
+      return NextResponse.json({ error: 'Database not initialized' }, { status: 500 });
     }
 
-    const team = assignment.team;
+    const { id } = await params;
 
-    // Fetch existing evaluation by this jury
-    const existingEvaluation = await db.evaluation.findUnique({
-      where: {
-        teamId_juryId: {
-          teamId: id,
-          juryId: session.userId,
-        },
-      },
-      include: {
-        scores: true,
-      },
-    });
+    // 1. Verify jury is assigned to this team
+    const assignmentDocId = `${session.userId}_${id}`;
+    const assignmentDoc = await adminDb.collection('juryTeamAssignments').doc(assignmentDocId).get();
+    
+    if (!assignmentDoc.exists) {
+      const assignmentSnapshot = await adminDb.collection('juryTeamAssignments')
+        .where('juryId', '==', session.userId)
+        .where('teamId', '==', id)
+        .limit(1)
+        .get();
 
-    // Fetch active criteria
-    const criteria = await db.criterion.findMany({
-      where: { active: true },
-      orderBy: { displayOrder: 'asc' },
-    });
+      if (assignmentSnapshot.empty) {
+        return NextResponse.json(
+          { error: 'Forbidden: You are not assigned to evaluate this team' },
+          { status: 403 }
+        );
+      }
+    }
 
-    const activeTotalMaxMarks = criteria.reduce((sum, c) => sum + c.maxMarks, 0);
+    // 2. Fetch the team and its venue/problem details
+    const teamDoc = await adminDb.collection('teams').doc(id).get();
+    if (!teamDoc.exists) {
+      return NextResponse.json({ error: 'Team not found' }, { status: 404 });
+    }
+    const teamData = teamDoc.data()!;
+
+    // Fetch venue details
+    let venueName = 'Unknown Venue';
+    if (teamData.venueId) {
+      const venueDoc = await adminDb.collection('venues').doc(teamData.venueId).get();
+      if (venueDoc.exists) {
+        venueName = venueDoc.data()?.name || venueName;
+      }
+    }
+
+    // Fetch problem statement details
+    let problemCode = 'N/A';
+    let problemTitle = 'N/A';
+    let problemDescription = '';
+    if (teamData.problemStatementId) {
+      const psDoc = await adminDb.collection('problemStatements').doc(teamData.problemStatementId).get();
+      if (psDoc.exists) {
+        const psData = psDoc.data()!;
+        problemCode = psData.code || problemCode;
+        problemTitle = psData.title || problemTitle;
+        problemDescription = psData.description || problemDescription;
+      }
+    }
+
+    // 3. Fetch existing evaluation by this jury
+    const evaluationDocId = `${id}_${session.userId}`;
+    const evaluationDoc = await adminDb.collection('evaluations').doc(evaluationDocId).get();
+    let existingEvaluation = null;
+
+    if (evaluationDoc.exists) {
+      const evalData = evaluationDoc.data()!;
+      let scoresList = evalData.scores || [];
+      if (scoresList.length === 0) {
+        const scoresSnapshot = await adminDb.collection('evaluations').doc(evaluationDocId).collection('scores').get();
+        scoresList = scoresSnapshot.docs.map(doc => ({
+          criterionId: doc.data().criterionId,
+          score: doc.data().score,
+        }));
+      }
+
+      existingEvaluation = {
+        id: evaluationDocId,
+        status: evalData.status,
+        totalScore: evalData.totalScore,
+        juryComment: evalData.juryComment,
+        submittedAt: evalData.submittedAt ? (evalData.submittedAt.toDate ? evalData.submittedAt.toDate() : evalData.submittedAt) : null,
+        scores: scoresList,
+      };
+    }
+
+    // 4. Fetch active criteria
+    const criteriaSnapshot = await adminDb.collection('criteria')
+      .where('active', '==', true)
+      .get();
+    
+    const criteria = criteriaSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as any[];
+
+    criteria.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+
+    const activeTotalMaxMarks = criteria.reduce((sum, c) => sum + (c.maxMarks || 0), 0);
 
     return NextResponse.json({
       team: {
-        id: team.id,
-        teamNumber: team.teamNumber,
-        teamName: team.teamName,
-        venueName: team.venue.name,
-        problemCode: team.problemStatement?.code ?? 'N/A',
-        problemTitle: team.problemStatement?.title ?? 'N/A',
-        problemDescription: team.problemStatement?.description ?? '',
+        id,
+        teamNumber: teamData.teamNumber || '',
+        teamName: teamData.teamName || '',
+        venueName,
+        problemCode,
+        problemTitle,
+        problemDescription,
       },
       criteria: criteria.map((c) => ({
         id: c.id,
@@ -79,19 +124,7 @@ export async function GET(
         displayOrder: c.displayOrder,
       })),
       maxTotalPossibleMarks: Math.round(activeTotalMaxMarks * 100) / 100,
-      existingEvaluation: existingEvaluation
-        ? {
-            id: existingEvaluation.id,
-            status: existingEvaluation.status,
-            totalScore: existingEvaluation.totalScore,
-            juryComment: existingEvaluation.juryComment,
-            submittedAt: existingEvaluation.submittedAt,
-            scores: existingEvaluation.scores.map((s) => ({
-              criterionId: s.criterionId,
-              score: s.score,
-            })),
-          }
-        : null,
+      existingEvaluation,
     });
   } catch (error) {
     console.error('Error fetching jury team details:', error);

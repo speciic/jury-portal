@@ -241,7 +241,7 @@ export default function AdminJuriesPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search evaluators by name or username..."
-          className="w-full luxury-input py-2.5 pl-10 pr-4 text-xs sm:text-sm placeholder:text-slate-500"
+          className="w-full luxury-input py-2.5 !pl-10 pr-4 text-xs sm:text-sm placeholder:text-slate-500"
         />
       </div>
 

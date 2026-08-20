@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles, User, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,11 +19,25 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
+      let res;
+      if (username.includes('@')) {
+        // Jury flow: Firebase Auth
+        const userCredential = await signInWithEmailAndPassword(auth, username, password);
+        const token = await userCredential.user.getIdToken();
+
+        res = await fetch('/api/auth/firebase-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+      } else {
+        // Admin / Custom flow
+        res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+      }
 
       const data = await res.json();
 
@@ -29,13 +45,16 @@ export default function LoginPage() {
         throw new Error(data.error || 'Invalid credentials');
       }
 
-      if (data.user.role === 'ADMIN') {
+      if (data.user?.role === 'ADMIN') {
         router.push('/admin/dashboard');
       } else {
         router.push('/jury/dashboard');
       }
-    } catch (err: unknown) {
-      if (err instanceof Error) {
+    } catch (err: any) {
+      console.error("Login catch block error details:", err);
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        setError('Invalid email or password');
+      } else if (err instanceof Error) {
         setError(err.message);
       } else {
         setError('Login failed');
@@ -99,7 +118,7 @@ export default function LoginPage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Enter your username"
-                  className="input-premium pl-11 py-3.5"
+                  className="input-premium !pl-11 py-3.5"
                 />
               </div>
             </div>
@@ -118,7 +137,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="input-premium pl-11 py-3.5"
+                  className="input-premium !pl-11 py-3.5"
                 />
               </div>
             </div>
@@ -141,16 +160,24 @@ export default function LoginPage() {
 
           {/* Footer note */}
           <div className="mt-8 pt-5 border-t border-white/5 flex flex-col items-center justify-center text-xs text-zinc-500 font-medium space-y-3">
-            <div className="flex items-center justify-between w-full">
+            <div className="flex items-center justify-between w-full mb-2">
               <div className="flex items-center space-x-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
                 <span>Encrypted Session</span>
               </div>
               <span>v3.0 Pro</span>
             </div>
-            <span className="text-zinc-600 text-[10px] uppercase tracking-widest text-center">
-              Developed in association with DonDeal Studios & RatiioAi
-            </span>
+            
+            <div className="flex flex-col items-center space-y-3 mt-4">
+              <span className="text-zinc-500 text-[10px] uppercase tracking-widest text-center font-bold">
+                Powered By
+              </span>
+              <div className="flex items-center justify-center space-x-5">
+                <img src="/logos/Dondeal.png" alt="DonDeal Studios" className="h-10 w-auto object-contain rounded-lg" />
+                <img src="/logos/Ratiio1.png" alt="RatiioAi" className="h-10 w-auto object-contain rounded-lg" />
+                <img src="/logos/riftgostudios.png" alt="RIFTGO STUDIOS" className="h-10 w-auto object-contain rounded-lg" />
+              </div>
+            </div>
           </div>
         </div>
       </div>

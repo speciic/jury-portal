@@ -92,10 +92,15 @@ export default function JuryLayout({ children }: { children: React.ReactNode }) 
       <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-8 pb-16">{children}</main>
 
       {/* Footer */}
-      <footer className="w-full text-center py-6 border-t border-white/[0.04]">
-        <span className="text-slate-600 text-[10px] uppercase tracking-widest block leading-tight">
-          Developed in association with DonDeal Studios & RatiioAi
+      <footer className="w-full text-center py-6 border-t border-white/[0.04] flex flex-col items-center space-y-2.5">
+        <span className="text-slate-600 text-[10px] uppercase tracking-widest block leading-tight font-bold">
+          Powered By
         </span>
+        <div className="flex items-center justify-center space-x-4 opacity-80">
+          <img src="/logos/Dondeal.png" alt="DonDeal Studios" className="h-10 w-auto object-contain rounded-md" />
+          <img src="/logos/Ratiio1.png" alt="RatiioAi" className="h-10 w-auto object-contain rounded-md" />
+          <img src="/logos/riftgostudios.png" alt="RIFTGO STUDIOS" className="h-10 w-auto object-contain rounded-md" />
+        </div>
       </footer>
     </div>
   );

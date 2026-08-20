@@ -308,7 +308,7 @@ export default function AdminScorePage() {
             value={teamSearch}
             onChange={(e) => setTeamSearch(e.target.value)}
             placeholder="Type team ID or team name..."
-            className="w-full luxury-input py-2.5 pl-10 pr-4 text-xs sm:text-sm placeholder:text-slate-500"
+            className="w-full luxury-input py-2.5 !pl-10 pr-4 text-xs sm:text-sm placeholder:text-slate-500"
           />
         </div>
 

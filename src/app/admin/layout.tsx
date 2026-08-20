@@ -209,10 +209,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <LogOut className="w-4 h-4" />
             <span>Sign Out</span>
           </button>
-          <div className="pt-3 mt-1 border-t border-white/[0.04] text-center">
-            <span className="text-slate-600 text-[9px] uppercase tracking-widest block leading-tight">
-              Developed in association with<br/>DonDeal Studios & RatiioAi
+          <div className="pt-3 mt-1 border-t border-white/[0.04] text-center flex flex-col items-center space-y-2">
+            <span className="text-slate-600 text-[9px] uppercase tracking-widest block leading-tight font-bold">
+              Powered By
             </span>
+            <div className="flex items-center justify-center space-x-3 opacity-80">
+              <img src="/logos/Dondeal.png" alt="DonDeal Studios" className="h-7 w-auto object-contain rounded" />
+              <img src="/logos/Ratiio1.png" alt="RatiioAi" className="h-7 w-auto object-contain rounded" />
+              <img src="/logos/riftgostudios.png" alt="RIFTGO STUDIOS" className="h-7 w-auto object-contain rounded" />
+            </div>
           </div>
         </div>
       </aside>
@@ -411,7 +416,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Enter min 4 characters"
-                    className="w-full luxury-input py-2.5 pl-10 pr-3.5 text-sm"
+                    className="w-full luxury-input py-2.5 !pl-10 pr-3.5 text-sm"
                   />
                 </div>
               </div>

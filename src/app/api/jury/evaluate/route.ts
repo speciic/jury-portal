@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { adminDb } from '@/lib/firebase-admin';
 import { getSession } from '@/lib/auth';
 import { createAuditLog } from '@/lib/audit';
 import { broadcastRealtimeEvent } from '@/lib/realtime';
@@ -11,6 +11,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    if (!adminDb) {
+      return NextResponse.json({ error: 'Database not initialized' }, { status: 500 });
+    }
+
     const { teamId, scores, juryComment } = await request.json();
 
     if (!teamId || !scores || typeof scores !== 'object') {
@@ -18,33 +22,29 @@ export async function POST(request: Request) {
     }
 
     // 1. Verify jury is assigned to team
-    const assignment = await db.juryTeamAssignment.findUnique({
-      where: {
-        juryId_teamId: {
-          juryId: session.userId,
-          teamId,
-        },
-      },
-    });
+    const assignmentDocId = `${session.userId}_${teamId}`;
+    const assignmentDoc = await adminDb.collection('juryTeamAssignments').doc(assignmentDocId).get();
+    
+    if (!assignmentDoc.exists) {
+      const assignmentSnapshot = await adminDb.collection('juryTeamAssignments')
+        .where('juryId', '==', session.userId)
+        .where('teamId', '==', teamId)
+        .limit(1)
+        .get();
 
-    if (!assignment) {
-      return NextResponse.json(
-        { error: 'Forbidden: You are not assigned to evaluate this team' },
-        { status: 403 }
-      );
+      if (assignmentSnapshot.empty) {
+        return NextResponse.json(
+          { error: 'Forbidden: You are not assigned to evaluate this team' },
+          { status: 403 }
+        );
+      }
     }
 
     // 2. Verify submission lock state
-    const existingEvaluation = await db.evaluation.findUnique({
-      where: {
-        teamId_juryId: {
-          teamId,
-          juryId: session.userId,
-        },
-      },
-    });
+    const evaluationDocId = `${teamId}_${session.userId}`;
+    const evaluationDoc = await adminDb.collection('evaluations').doc(evaluationDocId).get();
 
-    if (existingEvaluation && existingEvaluation.status === 'SUBMITTED') {
+    if (evaluationDoc.exists && evaluationDoc.data()?.status === 'SUBMITTED') {
       return NextResponse.json(
         { error: 'Evaluation is already submitted and locked. Contact admin to unlock.' },
         { status: 400 }
@@ -52,10 +52,14 @@ export async function POST(request: Request) {
     }
 
     // 3. Fetch active criteria
-    const criteria = await db.criterion.findMany({
-      where: { active: true },
-      orderBy: { displayOrder: 'asc' },
-    });
+    const criteriaSnapshot = await adminDb.collection('criteria')
+      .where('active', '==', true)
+      .get();
+    
+    const criteria = criteriaSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as any[];
 
     if (criteria.length === 0) {
       return NextResponse.json({ error: 'No active evaluation criteria found' }, { status: 400 });
@@ -103,107 +107,86 @@ export async function POST(request: Request) {
 
     calculatedTotalScore = Math.round(calculatedTotalScore * 100) / 100;
 
-    // 5. Run Database Transaction
-    const result = await db.$transaction(async (tx) => {
-      // Upsert evaluation record
-      const evaluation = await tx.evaluation.upsert({
-        where: {
-          teamId_juryId: {
-            teamId,
-            juryId: session.userId,
-          },
-        },
-        create: {
-          teamId,
-          juryId: session.userId,
-          status: 'SUBMITTED',
-          criteriaVersion: 1,
-          totalScore: calculatedTotalScore,
-          juryComment: juryComment ? juryComment.trim() : null,
-          submittedAt: new Date(),
-        },
-        update: {
-          status: 'SUBMITTED',
-          totalScore: calculatedTotalScore,
-          juryComment: juryComment ? juryComment.trim() : null,
-          submittedAt: new Date(),
-          unlockedAt: null,
-          unlockedReason: null,
-          unlockedByUserId: null,
-        },
-      });
-
-      // Clear existing score snapshots and insert updated snapshots
-      await tx.evaluationScore.deleteMany({
-        where: { evaluationId: evaluation.id },
-      });
-
-      for (const rec of validatedScoreRecords) {
-        await tx.evaluationScore.create({
-          data: {
-            evaluationId: evaluation.id,
-            criterionId: rec.criterionId,
-            criterionName: rec.criterionName,
-            criterionMaxMarks: rec.criterionMaxMarks,
-            score: rec.score,
-          },
-        });
-      }
-
-      // Check if all assigned juries for this team have submitted
-      const allAssignments = await tx.juryTeamAssignment.findMany({
-        where: { teamId },
-      });
-
-      const submittedEvaluations = await tx.evaluation.findMany({
-        where: {
-          teamId,
-          status: 'SUBMITTED',
-        },
-      });
-
-      const isFullyCompleted =
-        allAssignments.length > 0 && submittedEvaluations.length >= allAssignments.length;
-
-      let finalAvgScore: number | null = null;
-      if (isFullyCompleted) {
-        const sumTotals = submittedEvaluations.reduce((sum, e) => sum + e.totalScore, 0);
-        finalAvgScore = Math.round((sumTotals / submittedEvaluations.length) * 100) / 100;
-
-        await tx.team.update({
-          where: { id: teamId },
-          data: {
-            status: 'COMPLETED',
-            finalScore: finalAvgScore,
-          },
-        });
-      }
-
-      return { evaluation, isFullyCompleted, finalAvgScore };
+    // 5. Save to Firestore
+    const evalRef = adminDb.collection('evaluations').doc(evaluationDocId);
+    
+    await evalRef.set({
+      teamId,
+      juryId: session.userId,
+      status: 'SUBMITTED',
+      criteriaVersion: 1,
+      totalScore: calculatedTotalScore,
+      juryComment: juryComment ? juryComment.trim() : null,
+      submittedAt: new Date(),
+      scores: validatedScoreRecords,
+      unlockedAt: null,
+      unlockedReason: null,
+      unlockedByUserId: null,
     });
+
+    const scoresBatch = adminDb.batch();
+    const scoresColRef = evalRef.collection('scores');
+    
+    const oldScoresSnap = await scoresColRef.get();
+    oldScoresSnap.docs.forEach(doc => {
+      scoresBatch.delete(doc.ref);
+    });
+
+    validatedScoreRecords.forEach(rec => {
+      const newScoreRef = scoresColRef.doc(rec.criterionId);
+      scoresBatch.set(newScoreRef, rec);
+    });
+    await scoresBatch.commit();
+
+    // 6. Check if all assigned juries for this team have submitted
+    const allAssignmentsSnap = await adminDb.collection('juryTeamAssignments')
+      .where('teamId', '==', teamId)
+      .get();
+    
+    const submittedEvaluationsSnap = await adminDb.collection('evaluations')
+      .where('teamId', '==', teamId)
+      .where('status', '==', 'SUBMITTED')
+      .get();
+
+    const allAssignments = allAssignmentsSnap.docs.map(doc => doc.data());
+    const submittedEvaluations = submittedEvaluationsSnap.docs.map(doc => doc.data());
+
+    const isFullyCompleted =
+      allAssignments.length > 0 && submittedEvaluations.length >= allAssignments.length;
+
+    let finalAvgScore: number | null = null;
+    if (isFullyCompleted) {
+      const sumTotals = submittedEvaluations.reduce((sum, e) => sum + e.totalScore, 0);
+      finalAvgScore = Math.round((sumTotals / submittedEvaluations.length) * 100) / 100;
+
+      await adminDb.collection('teams').doc(teamId).update({
+        status: 'COMPLETED',
+        finalScore: finalAvgScore,
+      });
+    }
 
     await createAuditLog({
       userId: session.userId,
       userRole: session.role,
       action: 'SUBMIT_EVALUATION',
       entity: 'Evaluation',
-      entityId: result.evaluation.id,
-      newValue: { totalScore: calculatedTotalScore, isFullyCompleted: result.isFullyCompleted },
+      entityId: evaluationDocId,
+      newValue: { totalScore: calculatedTotalScore, isFullyCompleted },
     });
 
     broadcastRealtimeEvent('EVALUATION_SUBMITTED', {
       teamId,
       juryId: session.userId,
       totalScore: calculatedTotalScore,
-      isFullyCompleted: result.isFullyCompleted,
-      finalScore: result.finalAvgScore,
+      isFullyCompleted,
+      finalScore: finalAvgScore,
     });
 
     return NextResponse.json({
       success: true,
       totalScore: calculatedTotalScore,
-      isFullyCompleted: result.isFullyCompleted,
-      finalScore: result.finalAvgScore,
+      isFullyCompleted,
+      finalScore: finalAvgScore,
     });
   } catch (error) {
     console.error('Error submitting evaluation:', error);

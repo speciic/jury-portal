@@ -69,10 +69,17 @@ export async function getSession(): Promise<SessionPayload | null> {
   if (!session) return null;
 
   // Verify active user in DB
-  const user = await db.user.findUnique({
+  let user = await db.user.findUnique({
     where: { id: session.userId },
     select: { id: true, active: true, role: true, venueId: true, name: true, username: true },
   });
+
+  if (!user && session.username) {
+    user = await db.user.findUnique({
+      where: { username: session.username },
+      select: { id: true, active: true, role: true, venueId: true, name: true, username: true },
+    });
+  }
 
   if (!user || !user.active) return null;
 

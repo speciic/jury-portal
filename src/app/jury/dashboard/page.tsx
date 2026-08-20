@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Search, Building2, CheckCircle2, Clock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Search, Building2, CheckCircle2, Clock, ArrowRight, Sparkles, ShieldCheck } from 'lucide-react';
 import { useRealtime } from '@/components/RealtimeListener';
 
 interface AssignedTeam {
@@ -59,22 +59,26 @@ export default function JuryDashboardPage() {
   const pendingCount = teams.length - completedCount;
 
   return (
-    <div className="space-y-6">
-      {/* 31. WELCOME BANNER & VENUE BADGE */}
-      <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-3 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-40 h-40 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
+    <div className="space-y-7">
+      {/* WELCOME BANNER & VENUE BADGE */}
+      <div className="luxury-panel p-6 sm:p-8 relative overflow-hidden space-y-4">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[11px] font-semibold text-cyan-300 mb-2">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Official Evaluator Portal</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-display">
               Welcome, {juryInfo ? juryInfo.name : 'Jury Evaluator'}
             </h1>
-            <p className="text-xs text-slate-400 mt-1">
-              Select an assigned team below to enter evaluation scores
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+              Select an assigned team below to inspect submissions and enter evaluation grades
             </p>
           </div>
 
-          <div className="self-start sm:self-auto px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-800 flex items-center space-x-2 text-xs">
+          <div className="self-start sm:self-auto px-4 py-2.5 rounded-2xl bg-black/40 border border-white/[0.08] flex items-center space-x-2.5 text-xs shadow-inner">
             <Building2 className="w-4 h-4 text-cyan-400" />
             <span className="text-slate-400">Assigned Venue:</span>
             <strong className="text-white font-bold">{juryInfo?.venueName ?? 'Loading...'}</strong>
@@ -83,93 +87,96 @@ export default function JuryDashboardPage() {
 
         {/* Progress Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2 text-xs">
-          <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 text-center">
-            <span className="block text-slate-400 text-[10px]">Total Assigned</span>
-            <span className="font-extrabold text-white text-base">{teams.length}</span>
+          <div className="bg-black/30 p-3.5 rounded-xl border border-white/[0.06] text-center">
+            <span className="block text-slate-400 text-[10px] uppercase font-semibold">Total Assigned</span>
+            <span className="font-extrabold text-white text-xl font-display mt-0.5">{teams.length}</span>
           </div>
-          <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 text-center">
-            <span className="block text-slate-400 text-[10px]">Evaluated</span>
-            <span className="font-extrabold text-emerald-400 text-base">{completedCount}</span>
+          <div className="bg-black/30 p-3.5 rounded-xl border border-white/[0.06] text-center">
+            <span className="block text-slate-400 text-[10px] uppercase font-semibold">Evaluated</span>
+            <span className="font-extrabold text-emerald-400 text-xl font-display mt-0.5">{completedCount}</span>
           </div>
-          <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 text-center col-span-2 sm:col-span-1">
-            <span className="block text-slate-400 text-[10px]">Pending</span>
-            <span className="font-extrabold text-amber-400 text-base">{pendingCount}</span>
+          <div className="bg-black/30 p-3.5 rounded-xl border border-white/[0.06] text-center col-span-2 sm:col-span-1">
+            <span className="block text-slate-400 text-[10px] uppercase font-semibold">Pending</span>
+            <span className="font-extrabold text-amber-400 text-xl font-display mt-0.5">{pendingCount}</span>
           </div>
         </div>
       </div>
 
-      {/* 32. PROMINENT TEAM SEARCH BOX */}
+      {/* SEARCH BOX */}
       <div className="relative">
         <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search team by team number (e.g. HACK042)..."
-          className="w-full glass-input rounded-2xl py-3.5 pl-12 pr-4 text-sm placeholder:text-slate-500 font-medium"
+          placeholder="Search team by team number (e.g. HACK042) or name..."
+          className="w-full luxury-input rounded-2xl py-3.5 pl-12 pr-4 text-sm placeholder:text-slate-500 font-medium"
         />
       </div>
 
       {/* ASSIGNED TEAMS GRID */}
       {loading ? (
-        <div className="py-12 text-center text-slate-400 text-sm">
-          Loading assigned teams...
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="w-10 h-10 border-3 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mb-3" />
+          <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+            Loading Assigned Roster...
+          </p>
         </div>
       ) : teams.length === 0 ? (
-        <div className="glass-panel p-8 rounded-2xl text-center text-slate-400 text-sm">
-          No assigned teams found matching your search.
+        <div className="luxury-panel p-12 text-center text-slate-400 text-sm">
+          No assigned teams found matching your search query.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {teams.map((team) => {
             const isCompleted = team.evaluationStatus === 'SUBMITTED';
 
             return (
               <div
                 key={team.id}
-                className="glass-panel p-5 rounded-2xl flex flex-col justify-between space-y-4 hover:border-cyan-500/40 transition-all border border-slate-800"
+                className="luxury-card p-6 flex flex-col justify-between space-y-4"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-mono font-extrabold text-xs text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/20">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-mono font-extrabold text-xs text-cyan-300 bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/25">
                       {team.teamNumber}
                     </span>
                     <span
-                      className={`inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                      className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-[11px] font-bold ${
                         isCompleted
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                          : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25'
+                          : 'bg-amber-500/10 text-amber-400 border border-amber-500/25'
                       }`}
                     >
                       {isCompleted ? (
                         <>
-                          <CheckCircle2 className="w-3 h-3" />
+                          <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Submitted ({team.totalScore?.toFixed(1)})</span>
                         </>
                       ) : (
                         <>
-                          <Clock className="w-3 h-3" />
-                          <span>Pending</span>
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>Pending Scoring</span>
                         </>
                       )}
                     </span>
                   </div>
 
-                  <h3 className="font-bold text-base text-white">{team.teamName}</h3>
+                  <h3 className="font-bold text-lg text-white font-display">{team.teamName}</h3>
                   <p className="text-xs text-slate-400 mt-1 font-mono">
-                    Problem: {team.problemCode} - {team.problemTitle}
+                    Problem: <span className="text-slate-200">{team.problemCode}</span> - {team.problemTitle}
                   </p>
                 </div>
 
                 <Link
                   href={`/jury/evaluate/${team.id}`}
-                  className={`w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 transition-all shadow-md ${
+                  className={`w-full py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 transition-all shadow-md ${
                     isCompleted
-                      ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
-                      : 'bg-gradient-accent hover:opacity-95 text-white shadow-cyan-500/20'
+                      ? 'bg-white/[0.05] hover:bg-white/[0.1] text-slate-200 border border-white/[0.08]'
+                      : 'luxury-btn-primary shadow-indigo-500/20'
                   }`}
                 >
-                  <span>{isCompleted ? 'View / Inspect Submission' : 'Evaluate Team'}</span>
+                  <span>{isCompleted ? 'Inspect Submitted Evaluation' : 'Enter Evaluation Scores'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>

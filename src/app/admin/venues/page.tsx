@@ -133,17 +133,23 @@ export default function AdminVenuesPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center space-x-2">
-            <Building2 className="w-7 h-7 text-indigo-400" />
-            <span>Venues & Lab Capacity</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Manage venue halls, max capacities, panel assignments, and live evaluation stats
-          </p>
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+              <Building2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-display">
+                Venues & Capacity
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+                Manage venue halls, room capacity limits & panel jury assignments
+              </p>
+            </div>
+          </div>
         </div>
 
         <button
@@ -153,21 +159,24 @@ export default function AdminVenuesPage() {
             setCapacity('50');
             setAddModalOpen(true);
           }}
-          className="py-2.5 px-4 rounded-xl bg-gradient-primary hover:opacity-95 text-white font-bold text-xs transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2"
+          className="py-2.5 px-4 rounded-xl luxury-btn-primary flex items-center justify-center space-x-2 text-xs"
         >
           <Plus className="w-4 h-4" />
-          <span>Add Venue</span>
+          <span>Add New Venue</span>
         </button>
       </div>
 
-      {/* 22. VENUES CARDS GRID */}
+      {/* VENUES CARDS GRID */}
       {loading ? (
-        <div className="py-12 text-center text-slate-400 text-sm">
-          Loading venues...
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="w-10 h-10 border-3 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-3" />
+          <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+            Loading Venues...
+          </p>
         </div>
       ) : venues.length === 0 ? (
-        <div className="glass-panel p-8 rounded-2xl text-center text-slate-400 text-sm">
-          No venues created yet.
+        <div className="luxury-panel p-12 text-center text-slate-400 text-sm">
+          No venues registered yet.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -180,15 +189,15 @@ export default function AdminVenuesPage() {
             return (
               <div
                 key={v.id}
-                className="glass-panel p-6 rounded-2xl flex flex-col justify-between space-y-4 hover:border-indigo-500/40 transition-all border border-slate-800"
+                className="luxury-card p-6 flex flex-col justify-between space-y-4"
               >
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-bold text-lg text-white">{v.name}</h3>
+                    <h3 className="font-bold text-lg text-white font-display">{v.name}</h3>
                     <button
                       type="button"
                       onClick={() => openEditModal(v)}
-                      className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+                      className="p-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 hover:text-white border border-white/[0.08] transition-colors"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
@@ -197,21 +206,21 @@ export default function AdminVenuesPage() {
                   <div className="space-y-1.5 text-xs text-slate-300">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">Max Capacity:</span>
-                      <span className="font-bold text-slate-200">{v.capacity} Teams</span>
+                      <span className="font-bold text-white font-mono">{v.capacity} Teams</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Assigned Juries:</span>
-                      <span className="font-bold text-indigo-300">{v.juriesCount} Juries</span>
+                      <span className="text-slate-400">Assigned Evaluators:</span>
+                      <span className="font-bold text-indigo-300 font-mono">{v.juriesCount} Juries</span>
                     </div>
                   </div>
 
                   {/* Jury Names List */}
                   {v.juries.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1">
+                    <div className="mt-3 flex flex-wrap gap-1.5">
                       {v.juries.map((j) => (
                         <span
                           key={j.id}
-                          className="px-2 py-0.5 rounded-md bg-slate-900 text-slate-300 border border-slate-800 text-[10px] font-medium"
+                          className="px-2.5 py-1 rounded-lg bg-black/40 text-slate-300 border border-white/[0.06] text-[10px] font-semibold"
                         >
                           {j.name}
                         </span>
@@ -220,32 +229,32 @@ export default function AdminVenuesPage() {
                   )}
 
                   {/* Completion Bar */}
-                  <div className="mt-4 space-y-1">
+                  <div className="mt-4 space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-400 font-medium">Evaluation Progress</span>
-                      <span className="font-bold text-indigo-400">{completionPct}%</span>
+                      <span className="font-bold text-indigo-300 font-mono">{completionPct}%</span>
                     </div>
-                    <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-slate-800">
+                    <div className="w-full h-2.5 bg-black/40 rounded-full overflow-hidden p-0.5 border border-white/[0.08]">
                       <div
-                        className="h-full bg-gradient-primary rounded-full transition-all duration-500"
+                        className="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 rounded-full transition-all duration-700 shadow-sm shadow-indigo-500/50"
                         style={{ width: `${Math.min(completionPct, 100)}%` }}
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 text-center text-xs pt-2 border-t border-slate-800/80">
-                  <div className="bg-slate-900/60 p-2 rounded-xl border border-slate-800">
-                    <span className="block text-slate-500 text-[10px]">Teams</span>
-                    <span className="font-bold text-white">{v.teamsAssigned}</span>
+                <div className="grid grid-cols-3 gap-2 text-center text-xs pt-3 border-t border-white/[0.08]">
+                  <div className="bg-black/30 p-2.5 rounded-xl border border-white/[0.06]">
+                    <span className="block text-slate-400 text-[10px] uppercase font-semibold">Teams</span>
+                    <span className="font-bold text-white font-mono mt-0.5">{v.teamsAssigned}</span>
                   </div>
-                  <div className="bg-slate-900/60 p-2 rounded-xl border border-slate-800">
-                    <span className="block text-slate-500 text-[10px]">Completed</span>
-                    <span className="font-bold text-emerald-400">{v.completedEvaluations}</span>
+                  <div className="bg-black/30 p-2.5 rounded-xl border border-white/[0.06]">
+                    <span className="block text-slate-400 text-[10px] uppercase font-semibold">Done</span>
+                    <span className="font-bold text-emerald-400 font-mono mt-0.5">{v.completedEvaluations}</span>
                   </div>
-                  <div className="bg-slate-900/60 p-2 rounded-xl border border-slate-800">
-                    <span className="block text-slate-500 text-[10px]">Pending</span>
-                    <span className="font-bold text-amber-400">{v.pendingEvaluations}</span>
+                  <div className="bg-black/30 p-2.5 rounded-xl border border-white/[0.06]">
+                    <span className="block text-slate-400 text-[10px] uppercase font-semibold">Pending</span>
+                    <span className="font-bold text-amber-400 font-mono mt-0.5">{v.pendingEvaluations}</span>
                   </div>
                 </div>
               </div>
@@ -254,35 +263,36 @@ export default function AdminVenuesPage() {
         </div>
       )}
 
-      {/* 23. ADD VENUE MODAL */}
+      {/* ADD VENUE MODAL */}
       {addModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-panel w-full max-w-md rounded-2xl p-6 shadow-2xl border border-slate-800">
-            <h2 className="text-xl font-bold text-white mb-4">Add New Venue</h2>
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="luxury-panel w-full max-w-md p-6 sm:p-7 shadow-2xl">
+            <h2 className="text-xl font-bold text-white mb-1 font-display">Add New Venue</h2>
+            <p className="text-xs text-slate-400 mb-5">Create a competition room or lab hall</p>
 
             {error && (
-              <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+              <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs">
                 {error}
               </div>
             )}
 
             <form onSubmit={handleAddVenue} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Venue Name (e.g. Venue 5 - Robotics Lab)
+                <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wider">
+                  Venue Name (e.g. Lab 3 - AI Incubator)
                 </label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Venue 5 - Robotics Lab"
-                  className="w-full glass-input rounded-xl py-2.5 px-3 text-xs"
+                  placeholder="Lab 3 - AI Incubator"
+                  className="w-full luxury-input py-2.5 px-3 text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wider">
                   Capacity (Max Teams)
                 </label>
                 <input
@@ -291,22 +301,22 @@ export default function AdminVenuesPage() {
                   min={1}
                   value={capacity}
                   onChange={(e) => setCapacity(e.target.value)}
-                  className="w-full glass-input rounded-xl py-2.5 px-3 text-xs"
+                  className="w-full luxury-input py-2.5 px-3 text-xs"
                 />
               </div>
 
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
+              <div className="flex items-center justify-end space-x-3 pt-5 border-t border-white/[0.08]">
                 <button
                   type="button"
                   onClick={() => setAddModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+                  className="px-4 py-2.5 luxury-btn-secondary text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 rounded-xl bg-gradient-primary hover:opacity-95 text-white font-bold text-xs"
+                  className="px-5 py-2.5 luxury-btn-primary text-xs"
                 >
                   {submitting ? 'Creating...' : 'Create Venue'}
                 </button>
@@ -316,21 +326,22 @@ export default function AdminVenuesPage() {
         </div>
       )}
 
-      {/* 24. EDIT VENUE MODAL */}
+      {/* EDIT VENUE MODAL */}
       {editModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-panel w-full max-w-md rounded-2xl p-6 shadow-2xl border border-slate-800">
-            <h2 className="text-xl font-bold text-white mb-4">Edit Venue Details</h2>
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="luxury-panel w-full max-w-md p-6 sm:p-7 shadow-2xl">
+            <h2 className="text-xl font-bold text-white mb-1 font-display">Edit Venue</h2>
+            <p className="text-xs text-slate-400 mb-5">Update venue capacity and details</p>
 
             {error && (
-              <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+              <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs">
                 {error}
               </div>
             )}
 
             <form onSubmit={handleEditVenue} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wider">
                   Venue Name
                 </label>
                 <input
@@ -338,12 +349,12 @@ export default function AdminVenuesPage() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full glass-input rounded-xl py-2.5 px-3 text-xs"
+                  className="w-full luxury-input py-2.5 px-3 text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wider">
                   Capacity (Max Teams)
                 </label>
                 <input
@@ -352,22 +363,22 @@ export default function AdminVenuesPage() {
                   min={1}
                   value={capacity}
                   onChange={(e) => setCapacity(e.target.value)}
-                  className="w-full glass-input rounded-xl py-2.5 px-3 text-xs"
+                  className="w-full luxury-input py-2.5 px-3 text-xs"
                 />
               </div>
 
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
+              <div className="flex items-center justify-end space-x-3 pt-5 border-t border-white/[0.08]">
                 <button
                   type="button"
                   onClick={() => setEditModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+                  className="px-4 py-2.5 luxury-btn-secondary text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 rounded-xl bg-gradient-primary hover:opacity-95 text-white font-bold text-xs"
+                  className="px-5 py-2.5 luxury-btn-primary text-xs"
                 >
                   {submitting ? 'Saving...' : 'Save Changes'}
                 </button>

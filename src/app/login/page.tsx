@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, UserCheck, KeyRound, User, Lock, Award, ArrowRight } from 'lucide-react';
+import { Sparkles, User, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -46,62 +46,79 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0f17] flex flex-col justify-center items-center px-4 relative font-sans">
+    <div className="min-h-screen flex flex-col justify-center items-center px-4 relative font-sans selection:bg-violet-500/30">
+      {/* Decorative Orbs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-violet-600/10 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-500/10 blur-[120px] pointer-events-none" />
+
       {/* Main Container */}
-      <div className="w-full max-w-sm z-10">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-600 mb-4 shadow-sm">
-            <Award className="w-6 h-6 text-white" />
+      <div className="w-full max-w-[420px] z-10 my-8">
+        {/* Brand Header */}
+        <div className="text-center mb-10 space-y-4">
+          <div className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-zinc-300">
+            <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
+            <span>Secure Evaluation Portal</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white mb-1.5">
-            Hackathon Jury Portal
-          </h1>
-          <p className="text-xs text-slate-400 font-medium">
-            Sign in to access your dashboard
-          </p>
+
+          <div className="relative inline-flex items-center justify-center">
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-violet-500 to-cyan-400 blur-xl opacity-30" />
+            <div className="relative w-16 h-16 rounded-2xl bg-[#0a0a0a] border border-white/10 flex items-center justify-center text-white shadow-2xl">
+              <Sparkles className="w-8 h-8 text-violet-400" />
+            </div>
+          </div>
+
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white mt-4">
+              Jury<span className="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">Portal</span>
+            </h1>
+            <p className="text-sm text-zinc-400 font-medium mt-2">
+              Sign in to manage and evaluate teams
+            </p>
+          </div>
         </div>
 
-        {/* Card */}
-        <div className="card-panel rounded-xl p-6 shadow-xl">
+        {/* Login Card */}
+        <div className="surface-panel p-8">
           {error && (
-            <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-medium flex items-center space-x-2">
-              <span className="text-rose-400">⚠️</span>
+            <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium flex items-center space-x-3">
+              <span className="text-lg">⚠️</span>
               <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest">
                 Username
               </label>
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <div className="relative group">
+                <User className="w-5 h-5 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2 group-focus-within:text-violet-400 transition-colors" />
                 <input
                   type="text"
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter username"
-                  className="w-full input-field rounded-lg py-2.5 pl-9 pr-3 text-sm placeholder:text-slate-500"
+                  placeholder="Enter your username"
+                  className="input-premium pl-11 py-3.5"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-widest">
+                  Password
+                </label>
+              </div>
+              <div className="relative group">
+                <Lock className="w-5 h-5 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2 group-focus-within:text-violet-400 transition-colors" />
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password"
-                  className="w-full input-field rounded-lg py-2.5 pl-9 pr-3 text-sm placeholder:text-slate-500"
+                  placeholder="••••••••••••"
+                  className="input-premium pl-11 py-3.5"
                 />
               </div>
             </div>
@@ -109,10 +126,10 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-5 py-2.5 px-4 btn-primary flex items-center justify-center space-x-2 disabled:opacity-50 text-sm font-medium"
+              className="w-full mt-2 btn-primary flex items-center justify-center space-x-2.5 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {loading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
                   <span>Sign In</span>
@@ -121,6 +138,20 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          {/* Footer note */}
+          <div className="mt-8 pt-5 border-t border-white/5 flex flex-col items-center justify-center text-xs text-zinc-500 font-medium space-y-3">
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center space-x-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                <span>Encrypted Session</span>
+              </div>
+              <span>v3.0 Pro</span>
+            </div>
+            <span className="text-zinc-600 text-[10px] uppercase tracking-widest text-center">
+              Developed in association with DonDeal Studios & RatiioAi
+            </span>
+          </div>
         </div>
       </div>
     </div>

@@ -194,73 +194,76 @@ export default function JuryEvaluationPage() {
 
   if (loading) {
     return (
-      <div className="py-12 text-center text-slate-400 text-sm">
-        Loading evaluation form...
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="w-10 h-10 border-3 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mb-3" />
+        <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+          Loading Evaluation Rubric...
+        </p>
       </div>
     );
   }
 
   if (error && !team) {
     return (
-      <div className="glass-panel p-6 rounded-2xl text-center space-y-4 border border-rose-500/30">
+      <div className="luxury-panel p-8 text-center space-y-4 border border-rose-500/30">
         <AlertCircle className="w-8 h-8 text-rose-400 mx-auto" />
         <p className="text-rose-300 text-sm font-semibold">{error}</p>
         <Link href="/jury/dashboard" className="inline-block text-xs font-bold text-cyan-400 hover:underline">
-          &larr; Back to Jury Dashboard
+          &larr; Return to Evaluator Dashboard
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       {/* Back Button */}
       <Link
         href="/jury/dashboard"
         className="inline-flex items-center space-x-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        <span>Back to My Assigned Teams</span>
+        <span>Back to Assigned Teams Roster</span>
       </Link>
 
-      {/* 33. TEAM CONTEXT HEADER */}
+      {/* TEAM CONTEXT HEADER */}
       {team && (
-        <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-1">
-              <div className="flex items-center space-x-2">
-                <span className="font-mono font-extrabold text-xs text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/20">
+        <div className="luxury-panel p-6 sm:p-7 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="flex items-center space-x-3">
+                <span className="font-mono font-bold text-xs text-cyan-300 bg-cyan-500/10 px-3 py-1 rounded-xl border border-cyan-500/25">
                   {team.teamNumber}
                 </span>
-                <h1 className="text-xl font-extrabold text-white">{team.teamName}</h1>
+                <h1 className="text-2xl font-extrabold text-white font-display">{team.teamName}</h1>
               </div>
-              <div className="text-xs text-slate-400 flex items-center space-x-2">
-                <Building2 className="w-3.5 h-3.5 text-slate-500" />
-                <span>Venue: <strong className="text-slate-200">{team.venueName}</strong></span>
+              <div className="text-xs text-slate-300 flex items-center space-x-2">
+                <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                <span>Venue: <strong className="text-white">{team.venueName}</strong></span>
               </div>
             </div>
 
             {/* Locked Status Badge */}
             {isLocked ? (
-              <div className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-xs flex items-center space-x-1.5">
-                <Lock className="w-3.5 h-3.5" />
-                <span>Status: Submitted (Locked)</span>
+              <div className="self-start sm:self-auto px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 font-bold text-xs flex items-center space-x-2 shadow-sm">
+                <Lock className="w-4 h-4" />
+                <span>Status: Submitted & Locked</span>
               </div>
             ) : (
-              <div className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 font-bold text-xs flex items-center space-x-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Status: Pending Evaluation</span>
+              <div className="self-start sm:self-auto px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-300 font-bold text-xs flex items-center space-x-2 shadow-sm">
+                <Sparkles className="w-4 h-4" />
+                <span>Status: Evaluation In Progress</span>
               </div>
             )}
           </div>
 
-          <div className="pt-2 border-t border-slate-800/80 text-xs text-slate-300 space-y-1">
-            <div className="font-semibold text-slate-200 flex items-center space-x-1.5">
-              <FileCode className="w-3.5 h-3.5 text-cyan-400" />
+          <div className="pt-3 border-t border-white/[0.08] text-xs text-slate-300 space-y-1.5">
+            <div className="font-semibold text-white flex items-center space-x-2">
+              <FileCode className="w-4 h-4 text-cyan-400" />
               <span>{team.problemCode}: {team.problemTitle}</span>
             </div>
             {team.problemDescription && (
-              <p className="text-slate-400 text-[11px] leading-relaxed">
+              <p className="text-slate-400 text-xs leading-relaxed pl-6">
                 {team.problemDescription}
               </p>
             )}
@@ -269,32 +272,32 @@ export default function JuryEvaluationPage() {
       )}
 
       {error && (
-        <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-medium flex items-center space-x-2">
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs font-medium flex items-center space-x-2.5">
           <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* 33. DYNAMIC TOUCH-FRIENDLY CRITERIA GRADING FORM */}
+      {/* DYNAMIC TOUCH-FRIENDLY CRITERIA GRADING FORM */}
       <form onSubmit={handleValidateBeforeSubmit} className="space-y-4">
         {criteria.map((c, index) => (
           <div
             key={c.id}
-            className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-3 focus-within:border-cyan-500/50 transition-all"
+            className="luxury-panel p-6 space-y-3 focus-within:border-cyan-500/50 transition-all"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Criterion #{index + 1}
+                  Rubric Criterion #{index + 1}
                 </span>
                 <h3 className="text-base font-bold text-white mt-0.5">{c.name}</h3>
               </div>
-              <span className="shrink-0 px-2.5 py-1 rounded-lg bg-slate-900 text-cyan-300 font-mono font-bold text-xs border border-slate-800">
-                Max Marks: {c.maxMarks}
+              <span className="shrink-0 px-3 py-1 rounded-xl bg-black/40 text-cyan-300 font-mono font-bold text-xs border border-white/[0.08]">
+                Max: {c.maxMarks} pts
               </span>
             </div>
 
-            {/* Touch Friendly Input Field */}
+            {/* Numeric Grade Input */}
             <div>
               <input
                 type="number"
@@ -304,15 +307,15 @@ export default function JuryEvaluationPage() {
                 disabled={isLocked}
                 value={marks[c.id] ?? ''}
                 onChange={(e) => handleMarkChange(c.id, c.maxMarks, e.target.value)}
-                placeholder={`0 - ${c.maxMarks}`}
-                className="w-full glass-input rounded-xl py-3.5 px-4 text-lg font-mono font-bold text-white placeholder:text-slate-600 disabled:opacity-60 disabled:cursor-not-allowed"
+                placeholder={`Enter marks (0 - ${c.maxMarks})`}
+                className="w-full luxury-input py-3.5 px-4 text-xl font-mono font-bold text-white placeholder:text-slate-600 disabled:opacity-60 disabled:cursor-not-allowed"
               />
             </div>
           </div>
         ))}
 
         {/* Optional Jury Comment Field */}
-        <div className="glass-panel p-5 rounded-2xl border border-slate-800 space-y-2">
+        <div className="luxury-panel p-6 space-y-2.5">
           <label className="block text-xs font-bold uppercase text-slate-400 tracking-wider">
             Evaluation Feedback / Jury Comments (Optional)
           </label>
@@ -321,18 +324,18 @@ export default function JuryEvaluationPage() {
             disabled={isLocked}
             value={juryComment}
             onChange={(e) => setJuryComment(e.target.value)}
-            placeholder="Add construct feedback for team implementation..."
-            className="w-full glass-input rounded-xl p-3 text-xs text-slate-200 placeholder:text-slate-600 disabled:opacity-60"
+            placeholder="Add constructive qualitative feedback for the team..."
+            className="w-full luxury-input p-3.5 text-xs text-slate-200 placeholder:text-slate-600 disabled:opacity-60 leading-relaxed"
           />
         </div>
 
-        {/* 36. SUBMIT BUTTON */}
+        {/* SUBMIT BUTTON */}
         {!isLocked && (
           <div className="pt-2">
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-4 px-6 rounded-2xl bg-gradient-accent hover:opacity-95 text-white font-extrabold text-base shadow-xl shadow-cyan-500/20 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+              className="w-full py-4 px-6 rounded-2xl luxury-btn-primary font-extrabold text-base transition-all flex items-center justify-center space-x-2.5 disabled:opacity-50"
             >
               {submitting ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -347,48 +350,48 @@ export default function JuryEvaluationPage() {
         )}
       </form>
 
-      {/* 34. STICKY DYNAMIC TOTAL SCORE BAR */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/90 backdrop-blur-md border-t border-slate-800 py-3 px-4 shadow-2xl">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
+      {/* STICKY TOTAL SCORE DOCK */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#080c14]/90 backdrop-blur-2xl border-t border-white/[0.08] py-3.5 px-4 shadow-2xl">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-sm shadow-cyan-400" />
             <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-              TOTAL SCORE
+              RUNNING TOTAL
             </span>
           </div>
 
-          <div className="font-mono font-extrabold text-2xl text-cyan-300">
+          <div className="font-mono font-extrabold text-2xl text-cyan-300 font-display">
             {runningTotal.toFixed(2)}
             <span className="text-xs text-slate-500 font-normal"> / {maxTotalPossibleMarks}</span>
           </div>
         </div>
       </div>
 
-      {/* 36. CONFIRMATION PROMPT MODAL */}
+      {/* CONFIRMATION PROMPT MODAL */}
       {confirmModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-panel w-full max-w-md rounded-2xl p-6 shadow-2xl border border-slate-800 space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="luxury-panel w-full max-w-md p-6 sm:p-7 shadow-2xl space-y-4">
             <div className="flex items-center space-x-3 text-cyan-400">
               <HelpCircle className="w-7 h-7" />
-              <h2 className="text-lg font-extrabold text-white">Confirm Evaluation Submission</h2>
+              <h2 className="text-lg font-extrabold text-white font-display">Confirm Score Submission</h2>
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed">
-              Are you sure you want to submit this evaluation? Once submitted, you cannot change the marks unless an administrator unlocks the evaluation.
+              Are you sure you want to finalize and lock this evaluation? Once submitted, grades cannot be modified without administrator intervention.
             </p>
 
-            <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+            <div className="bg-black/40 p-4 rounded-xl border border-white/[0.08] flex items-center justify-between text-xs">
               <span className="text-slate-400 font-medium">Calculated Total Marks:</span>
-              <span className="font-mono font-extrabold text-base text-cyan-300">
+              <span className="font-mono font-extrabold text-lg text-cyan-300">
                 {runningTotal.toFixed(2)} / {maxTotalPossibleMarks}
               </span>
             </div>
 
-            <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end space-x-3 pt-4 border-t border-white/[0.08]">
               <button
                 type="button"
                 onClick={() => setConfirmModalOpen(false)}
-                className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+                className="px-4 py-2.5 luxury-btn-secondary text-xs"
               >
                 Cancel
               </button>
@@ -396,9 +399,9 @@ export default function JuryEvaluationPage() {
                 type="button"
                 onClick={handleConfirmSubmit}
                 disabled={submitting}
-                className="px-5 py-2.5 rounded-xl bg-gradient-accent hover:opacity-95 text-white font-extrabold text-xs shadow-md shadow-cyan-500/20"
+                className="px-5 py-2.5 luxury-btn-primary text-xs font-bold"
               >
-                {submitting ? 'Submitting...' : 'Yes, Confirm & Submit'}
+                {submitting ? 'Submitting...' : 'Yes, Finalize & Submit'}
               </button>
             </div>
           </div>

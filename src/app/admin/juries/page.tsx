@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Search, Plus, UserCheck, KeyRound, Building2, Eye, Edit2, ShieldAlert } from 'lucide-react';
+import { Search, Plus, UserCheck, KeyRound, Building2, Eye, Edit2, ShieldCheck, Users } from 'lucide-react';
 import { useRealtime } from '@/components/RealtimeListener';
 
 interface JuryItem {
@@ -199,16 +199,23 @@ export default function AdminJuriesPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Juries Management
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Add jury evaluators, assign venues, monitor evaluation progress, and reset passwords
-          </p>
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+              <UserCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-display">
+                Juries & Evaluators
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+                Manage evaluator credentials, track evaluation progress & assign venues
+              </p>
+            </div>
+          </div>
         </div>
 
         <button
@@ -219,10 +226,10 @@ export default function AdminJuriesPage() {
             setPassword('');
             setAddModalOpen(true);
           }}
-          className="py-2.5 px-4 rounded-xl bg-gradient-primary hover:opacity-95 text-white font-bold text-xs transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2"
+          className="py-2.5 px-4 rounded-xl luxury-btn-primary flex items-center justify-center space-x-2 text-xs"
         >
           <Plus className="w-4 h-4" />
-          <span>Add Jury</span>
+          <span>Add New Evaluator</span>
         </button>
       </div>
 
@@ -233,37 +240,40 @@ export default function AdminJuriesPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search jury by name or username..."
-          className="w-full glass-input rounded-xl py-3 pl-10 pr-4 text-xs sm:text-sm placeholder:text-slate-500"
+          placeholder="Search evaluators by name or username..."
+          className="w-full luxury-input py-2.5 pl-10 pr-4 text-xs sm:text-sm placeholder:text-slate-500"
         />
       </div>
 
-      {/* 18. JURY CARDS GRID */}
+      {/* JURY CARDS GRID */}
       {loading ? (
-        <div className="py-12 text-center text-slate-400 text-sm">
-          Loading jury evaluators...
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="w-10 h-10 border-3 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-3" />
+          <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+            Loading Evaluators...
+          </p>
         </div>
       ) : juries.length === 0 ? (
-        <div className="glass-panel p-8 rounded-2xl text-center text-slate-400 text-sm">
-          No jury members found.
+        <div className="luxury-panel p-12 text-center text-slate-400 text-sm">
+          No jury members found matching your search.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {juries.map((jury) => (
             <div
               key={jury.id}
-              className="glass-panel p-5 rounded-2xl flex flex-col justify-between space-y-4 hover:border-indigo-500/40 transition-all"
+              className="luxury-card p-5 flex flex-col justify-between space-y-4"
             >
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-mono text-xs font-bold text-slate-400">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="font-mono text-xs font-bold text-slate-400 px-2 py-0.5 rounded bg-white/[0.04] border border-white/[0.06]">
                     @{jury.username}
                   </span>
                   <span
                     className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                       jury.active
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                        : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25'
+                        : 'bg-rose-500/10 text-rose-400 border border-rose-500/25'
                     }`}
                   >
                     {jury.active ? 'Active' : 'Inactive'}
@@ -272,43 +282,43 @@ export default function AdminJuriesPage() {
 
                 <h3 className="font-bold text-base text-white">{jury.name}</h3>
 
-                <div className="mt-2 flex items-center space-x-2 text-xs text-slate-300">
+                <div className="mt-2.5 flex items-center space-x-2 text-xs text-slate-300">
                   <Building2 className="w-3.5 h-3.5 text-slate-400" />
                   <span>Venue: <strong className="text-white">{jury.venue?.name ?? 'Unassigned'}</strong></span>
                 </div>
 
                 {/* Metrics */}
                 <div className="grid grid-cols-3 gap-2 mt-4 text-center text-xs">
-                  <div className="bg-slate-900/80 p-2 rounded-xl border border-slate-800">
-                    <span className="block text-slate-500 text-[10px]">Assigned</span>
-                    <span className="font-bold text-slate-200">{jury.totalAssigned}</span>
+                  <div className="bg-black/30 p-2.5 rounded-xl border border-white/[0.06]">
+                    <span className="block text-slate-400 text-[10px] uppercase font-semibold">Assigned</span>
+                    <span className="font-bold text-slate-200 font-mono mt-0.5">{jury.totalAssigned}</span>
                   </div>
-                  <div className="bg-slate-900/80 p-2 rounded-xl border border-slate-800">
-                    <span className="block text-slate-500 text-[10px]">Completed</span>
-                    <span className="font-bold text-emerald-400">{jury.completedEvaluations}</span>
+                  <div className="bg-black/30 p-2.5 rounded-xl border border-white/[0.06]">
+                    <span className="block text-slate-400 text-[10px] uppercase font-semibold">Completed</span>
+                    <span className="font-bold text-emerald-400 font-mono mt-0.5">{jury.completedEvaluations}</span>
                   </div>
-                  <div className="bg-slate-900/80 p-2 rounded-xl border border-slate-800">
-                    <span className="block text-slate-500 text-[10px]">Pending</span>
-                    <span className="font-bold text-amber-400">{jury.pendingEvaluations}</span>
+                  <div className="bg-black/30 p-2.5 rounded-xl border border-white/[0.06]">
+                    <span className="block text-slate-400 text-[10px] uppercase font-semibold">Pending</span>
+                    <span className="font-bold text-amber-400 font-mono mt-0.5">{jury.pendingEvaluations}</span>
                   </div>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="pt-3 border-t border-slate-800/80 grid grid-cols-2 gap-2">
+              <div className="pt-3 border-t border-white/[0.08] grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => openDetailModal(jury)}
-                  className="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition-all flex items-center justify-center space-x-1.5 border border-slate-700"
+                  className="py-2 px-3 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-white font-semibold text-xs transition-all flex items-center justify-center space-x-1.5 border border-white/[0.08]"
                 >
-                  <Eye className="w-3.5 h-3.5" />
+                  <Eye className="w-3.5 h-3.5 text-slate-400" />
                   <span>Progress</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => openEditModal(jury)}
-                  className="py-2 px-3 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 font-semibold text-xs transition-all flex items-center justify-center space-x-1.5 border border-indigo-500/30"
+                  className="py-2 px-3 rounded-xl bg-indigo-600/15 hover:bg-indigo-600/25 text-indigo-300 font-semibold text-xs transition-all flex items-center justify-center space-x-1.5 border border-indigo-500/25"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
                   <span>Edit / Reset</span>
@@ -319,35 +329,36 @@ export default function AdminJuriesPage() {
         </div>
       )}
 
-      {/* 19. ADD JURY MODAL */}
+      {/* ADD JURY MODAL */}
       {addModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-panel w-full max-w-md rounded-2xl p-6 shadow-2xl border border-slate-800">
-            <h2 className="text-xl font-bold text-white mb-4">Add New Jury Evaluator</h2>
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="luxury-panel w-full max-w-md p-6 sm:p-7 shadow-2xl">
+            <h2 className="text-xl font-bold text-white mb-1 font-display">Add Jury Evaluator</h2>
+            <p className="text-xs text-slate-400 mb-5">Create login credentials for a hackathon judge</p>
 
             {error && (
-              <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+              <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs">
                 {error}
               </div>
             )}
 
             <form onSubmit={handleAddJury} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Full Name (e.g. Dr. Alan Turing)
+                <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wider">
+                  Full Name
                 </label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Dr. Alan Turing"
-                  className="w-full glass-input rounded-xl py-2.5 px-3 text-xs"
+                  placeholder="e.g. Dr. Alan Turing"
+                  className="w-full luxury-input py-2.5 px-3 text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wider">
                   Username
                 </label>
                 <input
@@ -355,13 +366,13 @@ export default function AdminJuriesPage() {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="jury10"
-                  className="w-full glass-input rounded-xl py-2.5 px-3 text-xs font-mono"
+                  placeholder="jury01"
+                  className="w-full luxury-input py-2.5 px-3 text-xs font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wider">
                   Initial Password
                 </label>
                 <input
@@ -370,18 +381,18 @@ export default function AdminJuriesPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full glass-input rounded-xl py-2.5 px-3 text-xs"
+                  className="w-full luxury-input py-2.5 px-3 text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wider">
                   Assigned Venue
                 </label>
                 <select
                   value={venueId}
                   onChange={(e) => setVenueId(e.target.value)}
-                  className="w-full glass-input rounded-xl py-2.5 px-3 text-xs bg-slate-900"
+                  className="w-full luxury-input py-2.5 px-3 text-xs bg-[#080c14]"
                 >
                   {venues.map((v) => (
                     <option key={v.id} value={v.id}>
@@ -391,20 +402,20 @@ export default function AdminJuriesPage() {
                 </select>
               </div>
 
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
+              <div className="flex items-center justify-end space-x-3 pt-5 border-t border-white/[0.08]">
                 <button
                   type="button"
                   onClick={() => setAddModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+                  className="px-4 py-2.5 luxury-btn-secondary text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 rounded-xl bg-gradient-primary hover:opacity-95 text-white font-bold text-xs"
+                  className="px-5 py-2.5 luxury-btn-primary text-xs"
                 >
-                  {submitting ? 'Creating...' : 'Create Jury Account'}
+                  {submitting ? 'Creating...' : 'Create Account'}
                 </button>
               </div>
             </form>
@@ -412,21 +423,22 @@ export default function AdminJuriesPage() {
         </div>
       )}
 
-      {/* 20. EDIT JURY & SECURE PASSWORD RESET MODAL */}
+      {/* EDIT JURY & PASSWORD RESET MODAL */}
       {editModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-panel w-full max-w-md rounded-2xl p-6 shadow-2xl border border-slate-800">
-            <h2 className="text-xl font-bold text-white mb-4">Edit Jury & Reset Password</h2>
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="luxury-panel w-full max-w-md p-6 sm:p-7 shadow-2xl">
+            <h2 className="text-xl font-bold text-white mb-1 font-display">Edit Jury & Reset Password</h2>
+            <p className="text-xs text-slate-400 mb-5">Update evaluator account details and credentials</p>
 
             {error && (
-              <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+              <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs">
                 {error}
               </div>
             )}
 
             <form onSubmit={handleEditJury} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wider">
                   Full Name
                 </label>
                 <input
@@ -434,12 +446,12 @@ export default function AdminJuriesPage() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full glass-input rounded-xl py-2.5 px-3 text-xs"
+                  className="w-full luxury-input py-2.5 px-3 text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wider">
                   Username
                 </label>
                 <input
@@ -447,12 +459,12 @@ export default function AdminJuriesPage() {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full glass-input rounded-xl py-2.5 px-3 text-xs font-mono"
+                  className="w-full luxury-input py-2.5 px-3 text-xs font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wider">
                   New Password (Leave blank to keep unchanged)
                 </label>
                 <input
@@ -460,18 +472,18 @@ export default function AdminJuriesPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter new password to reset"
-                  className="w-full glass-input rounded-xl py-2.5 px-3 text-xs"
+                  className="w-full luxury-input py-2.5 px-3 text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wider">
                   Assigned Venue
                 </label>
                 <select
                   value={venueId}
                   onChange={(e) => setVenueId(e.target.value)}
-                  className="w-full glass-input rounded-xl py-2.5 px-3 text-xs bg-slate-900"
+                  className="w-full luxury-input py-2.5 px-3 text-xs bg-[#080c14]"
                 >
                   {venues.map((v) => (
                     <option key={v.id} value={v.id}>
@@ -487,25 +499,25 @@ export default function AdminJuriesPage() {
                   id="activeCheck"
                   checked={active}
                   onChange={(e) => setActive(e.target.checked)}
-                  className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500"
+                  className="rounded border-white/20 bg-black/40 text-indigo-600 focus:ring-indigo-500"
                 />
                 <label htmlFor="activeCheck" className="text-xs font-semibold text-slate-300">
-                  Account Active
+                  Account Active & Enabled
                 </label>
               </div>
 
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
+              <div className="flex items-center justify-end space-x-3 pt-5 border-t border-white/[0.08]">
                 <button
                   type="button"
                   onClick={() => setEditModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+                  className="px-4 py-2.5 luxury-btn-secondary text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 rounded-xl bg-gradient-primary hover:opacity-95 text-white font-bold text-xs"
+                  className="px-5 py-2.5 luxury-btn-primary text-xs"
                 >
                   {submitting ? 'Saving...' : 'Save Changes'}
                 </button>
@@ -515,20 +527,20 @@ export default function AdminJuriesPage() {
         </div>
       )}
 
-      {/* 21. JURY DETAILS & EVALUATION PROGRESS MODAL */}
+      {/* JURY DETAILS & EVALUATION PROGRESS MODAL */}
       {detailModalOpen && selectedJuryDetails && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-panel w-full max-w-2xl rounded-2xl p-6 shadow-2xl border border-slate-800 max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="luxury-panel w-full max-w-2xl p-6 sm:p-7 shadow-2xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
               <div>
-                <h2 className="text-xl font-bold text-white">{selectedJuryDetails.name}</h2>
+                <h2 className="text-xl font-bold text-white font-display">{selectedJuryDetails.name}</h2>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Venue: {selectedJuryDetails.venue?.name ?? 'Unassigned'} | @{selectedJuryDetails.username}
                 </p>
               </div>
               <button
                 onClick={() => setDetailModalOpen(false)}
-                className="text-slate-400 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg bg-slate-800"
+                className="text-slate-400 hover:text-white text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/[0.05] border border-white/[0.08]"
               >
                 Close
               </button>
@@ -539,36 +551,36 @@ export default function AdminJuriesPage() {
                 Assigned Team Evaluation Status
               </h3>
 
-              <div className="glass-panel rounded-xl overflow-hidden border border-slate-800">
+              <div className="luxury-card overflow-hidden">
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="bg-slate-900 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-slate-800">
+                    <tr className="bg-black/40 text-slate-400 font-semibold uppercase text-[10px] tracking-wider border-b border-white/[0.08]">
                       <th className="py-3 px-4">Team Number</th>
                       <th className="py-3 px-4">Team Name</th>
                       <th className="py-3 px-4 text-center">Status</th>
                       <th className="py-3 px-4 text-right">Marks Awarded</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60">
+                  <tbody className="divide-y divide-white/[0.05]">
                     {evaluatedTeams.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="py-6 text-center text-slate-500">
-                          No teams assigned yet.
+                        <td colSpan={4} className="py-8 text-center text-slate-500">
+                          No teams evaluated yet by this judge.
                         </td>
                       </tr>
                     ) : (
                       evaluatedTeams.map((t) => (
-                        <tr key={t.teamId} className="hover:bg-slate-800/40">
+                        <tr key={t.teamId} className="hover:bg-white/[0.03]">
                           <td className="py-3 px-4 font-mono font-bold text-indigo-300">
                             {t.teamNumber}
                           </td>
                           <td className="py-3 px-4 font-semibold text-white">{t.teamName}</td>
                           <td className="py-3 px-4 text-center">
                             <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                                 t.status === 'SUBMITTED'
-                                  ? 'bg-emerald-500/10 text-emerald-400'
-                                  : 'bg-amber-500/10 text-amber-400'
+                                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25'
+                                  : 'bg-amber-500/10 text-amber-400 border border-amber-500/25'
                               }`}
                             >
                               {t.status}

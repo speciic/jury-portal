@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Sparkles,
   AlertTriangle,
+  Trophy,
 } from 'lucide-react';
 import { useRealtime } from '@/components/RealtimeListener';
 
@@ -137,42 +138,45 @@ export default function AdminTeamDetailPage() {
 
   if (loading) {
     return (
-      <div className="py-12 text-center text-slate-400 text-sm">
-        Loading team evaluation breakdown...
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="w-10 h-10 border-3 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-3" />
+        <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+          Loading Scoring Matrix...
+        </p>
       </div>
     );
   }
 
   if (!team) {
     return (
-      <div className="text-center py-12">
-        <p className="text-slate-400 text-sm mb-4">Team not found.</p>
+      <div className="text-center py-20">
+        <p className="text-slate-400 text-sm mb-4">Team record not found.</p>
         <Link href="/admin/teams" className="text-indigo-400 font-semibold text-xs hover:underline">
-          &larr; Back to Teams
+          &larr; Return to Teams Directory
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-12">
       {/* Back Button */}
       <Link
         href="/admin/teams"
         className="inline-flex items-center space-x-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        <span>Back to Teams Management</span>
+        <span>Back to Teams Directory</span>
       </Link>
 
-      {/* 14. TEAM DETAILS HEADER CARD */}
-      <div className="glass-panel p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6 border border-slate-800">
-        <div className="space-y-2">
+      {/* TEAM DETAILS HEADER CARD */}
+      <div className="luxury-panel p-6 sm:p-7 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-2.5">
           <div className="flex items-center space-x-3">
-            <span className="font-mono font-extrabold text-sm text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-xl border border-indigo-500/20">
+            <span className="font-mono font-bold text-xs text-indigo-300 bg-indigo-500/10 px-3 py-1.5 rounded-xl border border-indigo-500/25">
               {team.teamNumber}
             </span>
-            <h1 className="text-2xl font-extrabold text-white">{team.teamName}</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-display">{team.teamName}</h1>
           </div>
 
           <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300">
@@ -182,77 +186,79 @@ export default function AdminTeamDetailPage() {
             </div>
             <div className="flex items-center space-x-1.5">
               <FileCode className="w-4 h-4 text-slate-400" />
-              <span>Problem: <strong className="text-white">{team.problemStatement?.code ?? 'N/A'}</strong></span>
+              <span>Problem: <strong className="text-white font-mono">{team.problemStatement?.code ?? 'N/A'}</strong></span>
             </div>
           </div>
         </div>
 
         {/* Final Score Summary Box */}
-        <div className="glass-card p-4 rounded-xl text-center md:text-right min-w-[200px] border border-slate-800">
-          <span className="block text-[11px] text-slate-400 font-semibold uppercase tracking-wider mb-1">
+        <div className="luxury-card p-5 text-center md:text-right min-w-[220px]">
+          <span className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">
             Official Final Score
           </span>
-          <div className="font-mono font-extrabold text-3xl text-indigo-300">
+          <div className="font-mono font-extrabold text-3xl text-indigo-300 font-display">
             {team.finalScore !== null && team.finalScore !== undefined
               ? `${team.finalScore.toFixed(2)}`
               : '—'}
             <span className="text-xs text-slate-500 font-normal"> / 100</span>
           </div>
 
-          <div className="mt-2 inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
+          <div className="mt-2.5">
             {team.status === 'COMPLETED' ? (
-              <span className="text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                Completed
+              <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Evaluation Completed</span>
               </span>
             ) : (
-              <span className="text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
-                Pending Evaluation
+              <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/25">
+                <Clock className="w-3.5 h-3.5" />
+                <span>Pending Scoring</span>
               </span>
             )}
           </div>
         </div>
       </div>
 
-      {/* 15. DYNAMIC SCORING MATRIX TABLE */}
+      {/* DYNAMIC SCORING MATRIX TABLE */}
       <div className="space-y-3">
-        <h2 className="text-lg font-bold text-white tracking-tight flex items-center space-x-2">
+        <h2 className="text-lg font-bold text-white tracking-tight flex items-center space-x-2 font-display">
           <Sparkles className="w-5 h-5 text-indigo-400" />
-          <span>Dynamic Criteria Score Breakdown</span>
+          <span>Dynamic Criteria Score Matrix</span>
         </h2>
 
-        <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800">
+        <div className="luxury-panel overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs sm:text-sm">
               <thead>
-                <tr className="border-b border-slate-800 bg-slate-900/90 text-slate-300 font-semibold uppercase text-[11px] tracking-wider">
-                  <th className="py-3.5 px-4 min-w-[200px]">Criteria</th>
-                  <th className="py-3.5 px-4 text-center w-24">Max Marks</th>
+                <tr className="border-b border-white/[0.08] bg-black/40 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
+                  <th className="py-4 px-5 min-w-[220px]">Evaluation Rubric</th>
+                  <th className="py-4 px-5 text-center w-28">Max Marks</th>
                   {assignedJuries.map((jury, idx) => (
-                    <th key={jury.id} className="py-3.5 px-4 text-center min-w-[120px]">
+                    <th key={jury.id} className="py-4 px-5 text-center min-w-[130px]">
                       Jury {idx + 1}
-                      <span className="block text-[10px] text-slate-400 font-normal normal-case">
+                      <span className="block text-[10px] text-slate-400 font-normal normal-case mt-0.5">
                         ({jury.name})
                       </span>
                     </th>
                   ))}
-                  <th className="py-3.5 px-4 text-right min-w-[110px]">Criterion Average</th>
+                  <th className="py-4 px-5 text-right min-w-[120px]">Criterion Average</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-white/[0.05]">
                 {criteriaBreakdown.map((row) => (
-                  <tr key={row.criterionId} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3.5 px-4 font-semibold text-slate-200">
+                  <tr key={row.criterionId} className="hover:bg-white/[0.03] transition-colors">
+                    <td className="py-4 px-5 font-semibold text-slate-200">
                       {row.criterionName}
                     </td>
-                    <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-400">
+                    <td className="py-4 px-5 text-center font-mono font-bold text-slate-400">
                       {row.maxMarks}
                     </td>
                     {assignedJuries.map((jury) => {
                       const score = row.juryScores[jury.id];
                       return (
-                        <td key={jury.id} className="py-3.5 px-4 text-center font-mono font-bold">
+                        <td key={jury.id} className="py-4 px-5 text-center font-mono font-bold">
                           {score !== null && score !== undefined ? (
-                            <span className="text-white bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">
+                            <span className="text-white bg-white/[0.05] px-3 py-1 rounded-lg border border-white/[0.08]">
                               {score.toFixed(1)}
                             </span>
                           ) : (
@@ -261,31 +267,31 @@ export default function AdminTeamDetailPage() {
                         </td>
                       );
                     })}
-                    <td className="py-3.5 px-4 text-right font-mono font-extrabold text-indigo-300">
+                    <td className="py-4 px-5 text-right font-mono font-extrabold text-indigo-300">
                       {row.averageScore !== null ? row.averageScore.toFixed(2) : '—'}
                     </td>
                   </tr>
                 ))}
 
                 {/* Jury Totals Summary Row */}
-                <tr className="bg-slate-900/90 font-bold border-t-2 border-slate-800 text-sm">
-                  <td className="py-4 px-4 text-white uppercase text-xs tracking-wider">
+                <tr className="bg-black/50 font-bold border-t-2 border-white/[0.08] text-sm">
+                  <td className="py-4 px-5 text-white uppercase text-xs tracking-wider">
                     Jury Total Score
                   </td>
-                  <td className="py-4 px-4 text-center font-mono text-slate-400 text-xs">
+                  <td className="py-4 px-5 text-center font-mono text-slate-400 text-xs">
                     100
                   </td>
                   {assignedJuries.map((jury) => {
                     const totalObj = juryTotals.find((j) => j.juryId === jury.id);
                     return (
-                      <td key={jury.id} className="py-4 px-4 text-center font-mono text-base text-indigo-300">
+                      <td key={jury.id} className="py-4 px-5 text-center font-mono text-base text-indigo-300">
                         {totalObj && totalObj.status === 'SUBMITTED' && totalObj.totalScore !== null
                           ? totalObj.totalScore.toFixed(2)
                           : '—'}
                       </td>
                     );
                   })}
-                  <td className="py-4 px-4 text-right font-mono font-extrabold text-base text-emerald-400">
+                  <td className="py-4 px-5 text-right font-mono font-extrabold text-base text-emerald-400">
                     {team.finalScore !== null && team.finalScore !== undefined
                       ? team.finalScore.toFixed(2)
                       : '—'}
@@ -299,23 +305,23 @@ export default function AdminTeamDetailPage() {
 
       {/* JURY COMMENTS & SUBMISSION METADATA CARDS */}
       <div className="space-y-3">
-        <h2 className="text-lg font-bold text-white tracking-tight flex items-center space-x-2">
+        <h2 className="text-lg font-bold text-white tracking-tight flex items-center space-x-2 font-display">
           <MessageSquare className="w-5 h-5 text-indigo-400" />
-          <span>Jury Submission Status & Comments</span>
+          <span>Jury Feedback & Submissions</span>
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {juryTotals.map((j) => (
-            <div key={j.juryId} className="glass-panel p-5 rounded-2xl space-y-3 border border-slate-800">
+            <div key={j.juryId} className="luxury-panel p-5 space-y-3.5">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-sm text-white">{j.juryName}</h3>
                 <span
                   className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                     j.status === 'SUBMITTED'
-                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25'
                       : j.status === 'UNLOCKED'
-                      ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                      : 'bg-slate-800 text-slate-400'
+                      ? 'bg-amber-500/10 text-amber-400 border border-amber-500/25'
+                      : 'bg-white/[0.05] text-slate-400'
                   }`}
                 >
                   {j.status}
@@ -324,7 +330,7 @@ export default function AdminTeamDetailPage() {
 
               <div className="text-xs text-slate-300 space-y-1">
                 <div>
-                  Score: <strong className="text-indigo-300 font-mono">{j.totalScore !== null ? `${j.totalScore.toFixed(2)} / 100` : '—'}</strong>
+                  Score Awarded: <strong className="text-indigo-300 font-mono text-sm">{j.totalScore !== null ? `${j.totalScore.toFixed(2)} / 100` : '—'}</strong>
                 </div>
                 {j.submittedAt && (
                   <div className="text-[11px] text-slate-400">
@@ -334,7 +340,7 @@ export default function AdminTeamDetailPage() {
               </div>
 
               {j.juryComment && (
-                <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 italic">
+                <div className="p-3.5 rounded-xl bg-black/30 border border-white/[0.06] text-xs text-slate-300 italic leading-relaxed">
                   "{j.juryComment}"
                 </div>
               )}
@@ -344,10 +350,10 @@ export default function AdminTeamDetailPage() {
                 <button
                   type="button"
                   onClick={() => handleOpenUnlock(j.evaluationId!)}
-                  className="w-full py-2 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-semibold text-xs transition-all border border-amber-500/30 flex items-center justify-center space-x-1.5"
+                  className="w-full py-2.5 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-semibold text-xs transition-all border border-amber-500/30 flex items-center justify-center space-x-1.5 shadow-sm"
                 >
                   <Unlock className="w-3.5 h-3.5" />
-                  <span>Unlock Evaluation</span>
+                  <span>Unlock for Revision</span>
                 </button>
               )}
             </div>
@@ -357,50 +363,50 @@ export default function AdminTeamDetailPage() {
 
       {/* UNLOCK EVALUATION MODAL */}
       {unlockModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-panel w-full max-w-md rounded-2xl p-6 shadow-2xl border border-slate-800">
-            <div className="flex items-center space-x-2 text-amber-400 mb-3">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="luxury-panel w-full max-w-md p-6 sm:p-7 shadow-2xl">
+            <div className="flex items-center space-x-2.5 text-amber-400 mb-3">
               <AlertTriangle className="w-6 h-6" />
-              <h2 className="text-lg font-bold text-white">Unlock Jury Evaluation</h2>
+              <h2 className="text-lg font-bold text-white font-display">Unlock Jury Evaluation</h2>
             </div>
 
             <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-              Unlocking allows the jury to re-enter and edit marks for this team. This action will be recorded in audit logs.
+              Unlocking allows the assigned jury to modify submitted grades for this team. This intervention is logged in the system audit trail.
             </p>
 
             {unlockError && (
-              <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+              <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs">
                 {unlockError}
               </div>
             )}
 
             <form onSubmit={handleConfirmUnlock} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Reason for Unlocking (Required)
+                <label className="block text-xs font-semibold text-slate-300 mb-1 uppercase tracking-wider">
+                  Audit Justification / Reason (Required)
                 </label>
                 <textarea
                   required
                   rows={3}
                   value={unlockReason}
                   onChange={(e) => setUnlockReason(e.target.value)}
-                  placeholder="e.g. Jury requested correction for problem statement #2 score typo"
-                  className="w-full glass-input rounded-xl p-3 text-xs"
+                  placeholder="e.g. Jury requested correction on rubric #2 due to typo..."
+                  className="w-full luxury-input p-3 text-xs leading-relaxed"
                 />
               </div>
 
-              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-800">
+              <div className="flex items-center justify-end space-x-3 pt-5 border-t border-white/[0.08]">
                 <button
                   type="button"
                   onClick={() => setUnlockModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white"
+                  className="px-4 py-2.5 luxury-btn-secondary text-xs"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={unlocking || !unlockReason.trim()}
-                  className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs"
+                  className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-lg shadow-amber-900/30"
                 >
                   {unlocking ? 'Unlocking...' : 'Confirm Unlock'}
                 </button>

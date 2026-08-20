@@ -14,8 +14,15 @@ if (!getApps().length) {
         credential: cert(serviceAccount)
       });
       console.log('Firebase Admin initialized successfully using service account file.');
+    } else if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      
+      initializeApp({
+        credential: cert(serviceAccount)
+      });
+      console.log('Firebase Admin initialized successfully using environment variable.');
     } else {
-      console.warn('Firebase Service Account file not found at:', serviceAccountPath);
+      console.warn('Firebase Service Account credentials not found (no file or env var).');
     }
   } catch (error) {
     console.error('Firebase Admin initialization error', error);

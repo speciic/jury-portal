@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { adminDb } from '@/lib/firebase-admin';
 import { getSession } from '@/lib/auth';
 import { createAuditLog } from '@/lib/audit';
 import { broadcastRealtimeEvent } from '@/lib/realtime';
@@ -10,13 +10,17 @@ export async function GET() {
     if (!session || session.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    if (!adminDb) {
+      return NextResponse.json({ error: 'Database not initialized' }, { status: 500 });
+    }
 
-    const criteria = await db.criterion.findMany({
-      orderBy: { displayOrder: 'asc' },
-    });
+    const criteriaSnap = await adminDb.collection('criteria').get();
+    const criteria = criteriaSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+    
+    criteria.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
 
     const activeCriteria = criteria.filter((c) => c.active);
-    const totalMaxMarks = activeCriteria.reduce((sum, c) => sum + c.maxMarks, 0);
+    const totalMaxMarks = activeCriteria.reduce((sum, c) => sum + (c.maxMarks || 0), 0);
 
     return NextResponse.json({
       criteria,
@@ -34,6 +38,9 @@ export async function POST(request: Request) {
     if (!session || session.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    if (!adminDb) {
+      return NextResponse.json({ error: 'Database not initialized' }, { status: 500 });
+    }
 
     const { name, maxMarks, displayOrder } = await request.json();
 
@@ -41,17 +48,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Criterion name and positive max marks required' }, { status: 400 });
     }
 
-    const count = await db.criterion.count();
+    const snapshot = await adminDb.collection('criteria').get();
+    const count = snapshot.size;
 
-    const newCriterion = await db.criterion.create({
-      data: {
-        name: name.trim(),
-        maxMarks: parseFloat(maxMarks),
-        displayOrder: displayOrder ? parseInt(displayOrder, 10) : count + 1,
-        active: true,
-        version: 1,
-      },
+    const newCriterionRef = await adminDb.collection('criteria').add({
+      name: name.trim(),
+      maxMarks: parseFloat(maxMarks),
+      displayOrder: displayOrder ? parseInt(displayOrder, 10) : count + 1,
+      active: true,
+      version: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
+
+    const newCriterion = {
+      id: newCriterionRef.id,
+      name: name.trim(),
+      maxMarks: parseFloat(maxMarks),
+      displayOrder: displayOrder ? parseInt(displayOrder, 10) : count + 1,
+      active: true,
+      version: 1,
+    };
 
     await createAuditLog({
       userId: session.userId,
@@ -59,7 +76,7 @@ export async function POST(request: Request) {
       action: 'CREATE_CRITERION',
       entity: 'Criterion',
       entityId: newCriterion.id,
-      newValue: { name: newCriterion.name, maxMarks: newCriterion.maxMarks },
+      newValue: JSON.stringify({ name: newCriterion.name, maxMarks: newCriterion.maxMarks }),
     });
 
     broadcastRealtimeEvent('CRITERIA_UPDATED');
@@ -77,6 +94,9 @@ export async function PUT(request: Request) {
     if (!session || session.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    if (!adminDb) {
+      return NextResponse.json({ error: 'Database not initialized' }, { status: 500 });
+    }
 
     const { id, name, maxMarks, displayOrder, active } = await request.json();
 
@@ -84,21 +104,26 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Criterion ID is required' }, { status: 400 });
     }
 
-    const existingCriterion = await db.criterion.findUnique({ where: { id } });
-    if (!existingCriterion) {
+    const critRef = adminDb.collection('criteria').doc(id);
+    const existingCritDoc = await critRef.get();
+    if (!existingCritDoc.exists) {
       return NextResponse.json({ error: 'Criterion not found' }, { status: 404 });
     }
+    const existingCriterion = existingCritDoc.data() as any;
 
-    const updatedCriterion = await db.criterion.update({
-      where: { id },
-      data: {
-        name: name ? name.trim() : existingCriterion.name,
-        maxMarks: maxMarks !== undefined ? parseFloat(maxMarks) : existingCriterion.maxMarks,
-        displayOrder: displayOrder !== undefined ? parseInt(displayOrder, 10) : existingCriterion.displayOrder,
-        active: active !== undefined ? Boolean(active) : existingCriterion.active,
-        version: existingCriterion.version + 1, // Increment version for snapshot tracking
-      },
-    });
+    const updateData: Record<string, any> = {
+      updatedAt: new Date().toISOString(),
+      version: (existingCriterion.version || 1) + 1
+    };
+
+    if (name) updateData.name = name.trim();
+    if (maxMarks !== undefined) updateData.maxMarks = parseFloat(maxMarks);
+    if (displayOrder !== undefined) updateData.displayOrder = parseInt(displayOrder, 10);
+    if (active !== undefined) updateData.active = Boolean(active);
+
+    await critRef.update(updateData);
+
+    const updatedCriterion = { ...existingCriterion, ...updateData };
 
     await createAuditLog({
       userId: session.userId,
@@ -106,8 +131,8 @@ export async function PUT(request: Request) {
       action: 'UPDATE_CRITERION',
       entity: 'Criterion',
       entityId: id,
-      previousValue: { name: existingCriterion.name, maxMarks: existingCriterion.maxMarks, active: existingCriterion.active },
-      newValue: { name: updatedCriterion.name, maxMarks: updatedCriterion.maxMarks, active: updatedCriterion.active },
+      previousValue: JSON.stringify({ name: existingCriterion.name, maxMarks: existingCriterion.maxMarks, active: existingCriterion.active }),
+      newValue: JSON.stringify({ name: updatedCriterion.name, maxMarks: updatedCriterion.maxMarks, active: updatedCriterion.active }),
     });
 
     broadcastRealtimeEvent('CRITERIA_UPDATED');

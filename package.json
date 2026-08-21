@@ -4,20 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma db push && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run",
-    "db:push": "prisma db push",
-    "db:seed": "prisma db seed"
-  },
-  "prisma": {
-    "seed": "npx tsx prisma/seed.ts"
+    "test": "vitest run"
   },
   "dependencies": {
     "@next/env": "^15.2.0",
     "@opentelemetry/api": "^1.9.1",
-    "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
     "exceljs": "^4.4.0",
     "firebase": "^12.18.0",
@@ -37,7 +31,6 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "^15.2.0",
-    "prisma": "^6.19.3",
     "tailwindcss": "^4",
     "tsx": "^4.23.12",
     "typescript": "^5",

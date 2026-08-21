@@ -27,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`dark ${fontSans.variable} ${fontDisplay.variable}`}>
-      <body className="font-sans antialiased min-h-screen bg-[#04060B] text-slate-100 selection:bg-indigo-500/30 selection:text-indigo-200 overflow-x-hidden">
+      <body suppressHydrationWarning className="font-sans antialiased min-h-screen bg-[#04060B] text-slate-100 selection:bg-indigo-500/30 selection:text-indigo-200 overflow-x-hidden">
         {/* Subtle Luxury Ambient Mesh Background */}
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
           <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-indigo-500/10 via-purple-500/5 to-transparent rounded-full blur-3xl opacity-60" />

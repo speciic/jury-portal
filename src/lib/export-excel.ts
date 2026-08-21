@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { db } from './db';
+import { adminDb } from './firebase-admin';
 
 export async function generateResultsExcelBuffer(): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
@@ -7,41 +7,53 @@ export async function generateResultsExcelBuffer(): Promise<Buffer> {
   workbook.lastModifiedBy = 'Admin';
   workbook.created = new Date();
 
-  // Fetch all venues, juries, teams, evaluations & criteria from database
-  const teams = await db.team.findMany({
-    include: {
-      venue: true,
-      problemStatement: true,
-      evaluations: {
-        include: {
-          jury: true,
-          scores: true,
-        },
-      },
-      assignments: {
-        include: {
-          jury: true,
-        },
-      },
-    },
-    orderBy: { teamNumber: 'asc' },
+  // Fetch data from Firestore
+  if (!adminDb) {
+    throw new Error('Database not initialized');
+  }
+
+  const teamsSnap = await adminDb.collection('teams').get();
+  const teams = teamsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+  teams.sort((a, b) => (a.teamNumber || '').localeCompare(b.teamNumber || ''));
+
+  const usersSnap = await adminDb.collection('users').get();
+  const juries = usersSnap.docs.filter(doc => doc.data().role === 'JURY').map(doc => ({ id: doc.id, ...doc.data() } as any));
+  juries.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+  const venuesSnap = await adminDb.collection('venues').get();
+  const venues = venuesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+  venues.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+  const psSnap = await adminDb.collection('problemStatements').get();
+  const problemStatements = psSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+
+  const evalSnap = await adminDb.collection('evaluations').get();
+  const evaluations = evalSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+
+  const assignmentsSnap = await adminDb.collection('juryTeamAssignments').get();
+  const assignments = assignmentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+
+  // Build relations in memory
+  teams.forEach(team => {
+    team.venue = venues.find(v => v.id === team.venueId) || { id: team.venueId, name: 'Unknown', capacity: 0 };
+    team.problemStatement = problemStatements.find(ps => ps.id === team.problemStatementId) || null;
+    team.evaluations = evaluations.filter(e => e.teamId === team.id).map(e => {
+      e.jury = juries.find(j => j.id === e.juryId) || { id: e.juryId, name: 'Unknown' };
+      return e;
+    });
+    team.assignments = assignments.filter(a => a.teamId === team.id).map(a => {
+      a.jury = juries.find(j => j.id === a.juryId) || { id: a.juryId, name: 'Unknown' };
+      return a;
+    });
   });
 
-  const juries = await db.user.findMany({
-    where: { role: 'JURY' },
-    orderBy: { name: 'asc' },
-  });
-
-  const venues = await db.venue.findMany({
-    include: {
-      teams: true,
-    },
-    orderBy: { name: 'asc' },
+  venues.forEach(venue => {
+    venue.teams = teams.filter(t => t.venueId === venue.id);
   });
 
   // Calculate ranks for completed teams
   const completedTeamsWithScore = teams
-    .filter((t) => t.status === 'COMPLETED' && t.finalScore !== null)
+    .filter((t) => t.status === 'COMPLETED' && t.finalScore !== null && t.finalScore !== undefined)
     .sort((a, b) => (b.finalScore ?? 0) - (a.finalScore ?? 0));
 
   const rankMap = new Map<string, number>();
@@ -81,7 +93,7 @@ export async function generateResultsExcelBuffer(): Promise<Buffer> {
     const rank = rankMap.get(team.id) ? `#${rankMap.get(team.id)}` : 'N/A';
     const juryScoresMap = new Map<string, number>();
 
-    team.evaluations.forEach((ev) => {
+    team.evaluations.forEach((ev: any) => {
       if (ev.status === 'SUBMITTED') {
         juryScoresMap.set(ev.juryId, ev.totalScore);
       }
@@ -105,7 +117,7 @@ export async function generateResultsExcelBuffer(): Promise<Buffer> {
       team.problemStatement?.code ?? 'N/A',
       ...juryScoreCells,
       finalAvg,
-      team.status,
+      team.status || 'PENDING',
     ]);
   });
 
@@ -148,21 +160,23 @@ export async function generateResultsExcelBuffer(): Promise<Buffer> {
   };
 
   teams.forEach((team) => {
-    team.evaluations.forEach((ev) => {
-      ev.scores.forEach((sc) => {
-        sheet2.addRow([
-          team.teamNumber,
-          team.teamName,
-          team.venue.name,
-          ev.jury.name,
-          sc.criterionName,
-          sc.criterionMaxMarks,
-          sc.score,
-          ev.juryComment || '-',
-          new Date(ev.submittedAt).toLocaleString(),
-          ev.status,
-        ]);
-      });
+    team.evaluations.forEach((ev: any) => {
+      if (ev.scores && Array.isArray(ev.scores)) {
+        ev.scores.forEach((sc: any) => {
+          sheet2.addRow([
+            team.teamNumber,
+            team.teamName,
+            team.venue.name,
+            ev.jury.name,
+            sc.criterionName,
+            sc.criterionMaxMarks,
+            sc.score,
+            ev.juryComment || '-',
+            new Date(ev.submittedAt || ev.createdAt).toLocaleString(),
+            ev.status,
+          ]);
+        });
+      }
     });
   });
 
@@ -175,16 +189,16 @@ export async function generateResultsExcelBuffer(): Promise<Buffer> {
   // -------------------------------------------------------------
   const sheet3 = workbook.addWorksheet('Evaluation Summary');
   const totalTeams = teams.length;
-  const completedTeams = teams.filter((t) => t.status === 'COMPLETED').length;
-  const pendingTeams = totalTeams - completedTeams;
+  const completedTeamsCount = teams.filter((t) => t.status === 'COMPLETED').length;
+  const pendingTeams = totalTeams - completedTeamsCount;
 
   sheet3.addRow(['Hackathon Evaluation Metrics']);
   sheet3.getRow(1).font = { size: 16, bold: true };
   sheet3.addRow([]);
   sheet3.addRow(['Total Teams', totalTeams]);
-  sheet3.addRow(['Completed Teams', completedTeams]);
+  sheet3.addRow(['Completed Teams', completedTeamsCount]);
   sheet3.addRow(['Pending Teams', pendingTeams]);
-  sheet3.addRow(['Completion Percentage', `${((completedTeams / (totalTeams || 1)) * 100).toFixed(1)}%`]);
+  sheet3.addRow(['Completion Percentage', `${((completedTeamsCount / (totalTeams || 1)) * 100).toFixed(1)}%`]);
   sheet3.addRow([]);
 
   sheet3.addRow(['Venue Breakdown']);
@@ -200,7 +214,7 @@ export async function generateResultsExcelBuffer(): Promise<Buffer> {
     const vCompleted = vTeams.filter((t) => t.status === 'COMPLETED').length;
     const vPending = vTeams.length - vCompleted;
     const vPct = `${((vCompleted / (vTeams.length || 1)) * 100).toFixed(1)}%`;
-    sheet3.addRow([v.name, v.capacity, vTeams.length, vCompleted, vPending, vPct]);
+    sheet3.addRow([v.name, v.capacity || 0, vTeams.length, vCompleted, vPending, vPct]);
   });
 
   sheet3.columns.forEach((col) => {

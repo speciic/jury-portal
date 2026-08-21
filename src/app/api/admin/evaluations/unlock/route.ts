@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { adminDb } from '@/lib/firebase-admin';
 import { getSession } from '@/lib/auth';
 import { createAuditLog } from '@/lib/audit';
 import { broadcastRealtimeEvent } from '@/lib/realtime';
@@ -9,6 +9,9 @@ export async function POST(request: Request) {
     const session = await getSession();
     if (!session || session.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (!adminDb) {
+      return NextResponse.json({ error: 'Database not initialized' }, { status: 500 });
     }
 
     const { evaluationId, reason } = await request.json();
@@ -20,38 +23,40 @@ export async function POST(request: Request) {
       );
     }
 
-    const evaluation = await db.evaluation.findUnique({
-      where: { id: evaluationId },
-      include: { team: true, jury: true },
-    });
-
-    if (!evaluation) {
+    const evalRef = adminDb.collection('evaluations').doc(evaluationId);
+    const evalDoc = await evalRef.get();
+    
+    if (!evalDoc.exists) {
       return NextResponse.json({ error: 'Evaluation not found' }, { status: 404 });
     }
+    const evaluation = evalDoc.data() as any;
 
-    // Unlock evaluation and set team back to pending
-    const unlockedEvaluation = await db.$transaction(async (tx) => {
-      const updatedEval = await tx.evaluation.update({
-        where: { id: evaluationId },
-        data: {
-          status: 'UNLOCKED',
-          unlockedAt: new Date(),
-          unlockedReason: reason.trim(),
-          unlockedByUserId: session.userId,
-        },
-      });
+    const teamRef = adminDb.collection('teams').doc(evaluation.teamId);
 
-      // Update team status to PENDING and clear finalScore until all evaluations are resubmitted
-      await tx.team.update({
-        where: { id: evaluation.teamId },
-        data: {
-          status: 'PENDING',
-          finalScore: null,
-        },
-      });
+    const batch = adminDb.batch();
 
-      return updatedEval;
+    batch.update(evalRef, {
+      status: 'UNLOCKED',
+      unlockedAt: new Date().toISOString(),
+      unlockedReason: reason.trim(),
+      unlockedByUserId: session.userId,
     });
+
+    batch.update(teamRef, {
+      status: 'PENDING',
+      finalScore: null,
+    });
+
+    await batch.commit();
+
+    const unlockedEvaluation = {
+      ...evaluation,
+      id: evaluationId,
+      status: 'UNLOCKED',
+      unlockedAt: new Date().toISOString(),
+      unlockedReason: reason.trim(),
+      unlockedByUserId: session.userId,
+    };
 
     await createAuditLog({
       userId: session.userId,
@@ -59,8 +64,8 @@ export async function POST(request: Request) {
       action: 'UNLOCK_EVALUATION',
       entity: 'Evaluation',
       entityId: evaluationId,
-      previousValue: { status: evaluation.status, totalScore: evaluation.totalScore },
-      newValue: { status: 'UNLOCKED' },
+      previousValue: JSON.stringify({ status: evaluation.status, totalScore: evaluation.totalScore }),
+      newValue: JSON.stringify({ status: 'UNLOCKED' }),
       reason: reason.trim(),
     });
 

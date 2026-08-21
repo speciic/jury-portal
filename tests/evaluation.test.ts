@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { db } from '../src/lib/db';
+
 import { hashPassword, verifyPassword, createSessionToken, verifySessionToken } from '../src/lib/auth';
 import { generateResultsExcelBuffer } from '../src/lib/export-excel';
 

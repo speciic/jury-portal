@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { adminDb } from '@/lib/firebase-admin';
 import { getSession, hashPassword } from '@/lib/auth';
 import { createAuditLog } from '@/lib/audit';
 import { broadcastRealtimeEvent } from '@/lib/realtime';
@@ -10,54 +10,54 @@ export async function GET(request: Request) {
     if (!session || session.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    if (!adminDb) {
+      return NextResponse.json({ error: 'Database not initialized' }, { status: 500 });
+    }
 
     const { searchParams } = new URL(request.url);
-    const search = searchParams.get('q')?.trim() || '';
+    const search = searchParams.get('q')?.trim().toLowerCase() || '';
 
-    const juries = await db.user.findMany({
-      where: {
-        role: 'JURY',
-        ...(search
-          ? {
-              OR: [
-                { name: { contains: search } },
-                { username: { contains: search } },
-              ],
-            }
-          : {}),
-      },
-      include: {
-        venue: true,
-        assignments: {
-          include: {
-            team: {
-              include: {
-                evaluations: true,
-              },
-            },
-          },
-        },
-        evaluations: true,
-      },
-      orderBy: { name: 'asc' },
-    });
+    const usersSnap = await adminDb.collection('users').where('role', '==', 'JURY').get();
+    let users = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
 
-    const formattedJuries = juries.map((jury) => {
-      const totalAssigned = jury.assignments.length;
-      const completed = jury.evaluations.filter((e) => e.status === 'SUBMITTED').length;
+    if (search) {
+      users = users.filter(u => 
+        (u.name && u.name.toLowerCase().includes(search)) || 
+        (u.username && u.username.toLowerCase().includes(search))
+      );
+    }
+
+    const venuesSnap = await adminDb.collection('venues').get();
+    const venues = venuesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+
+    const assignmentsSnap = await adminDb.collection('juryTeamAssignments').get();
+    const assignments = assignmentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+
+    const evaluationsSnap = await adminDb.collection('evaluations').get();
+    const evaluations = evaluationsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+
+    const formattedJuries = users.map((jury) => {
+      const juryAssignments = assignments.filter(a => a.juryId === jury.id);
+      const juryEvaluations = evaluations.filter(e => e.juryId === jury.id && e.status === 'SUBMITTED');
+      
+      const totalAssigned = juryAssignments.length;
+      const completed = juryEvaluations.length;
       const pending = totalAssigned - completed;
+      const venue = venues.find(v => v.id === jury.venueId);
 
       return {
         id: jury.id,
         name: jury.name,
         username: jury.username,
         active: jury.active,
-        venue: jury.venue ? { id: jury.venue.id, name: jury.venue.name } : null,
+        venue: venue ? { id: venue.id, name: venue.name } : null,
         totalAssigned,
         completedEvaluations: completed,
         pendingEvaluations: Math.max(0, pending),
       };
     });
+
+    formattedJuries.sort((a, b) => a.name.localeCompare(b.name));
 
     return NextResponse.json({ juries: formattedJuries });
   } catch (error) {
@@ -72,6 +72,9 @@ export async function POST(request: Request) {
     if (!session || session.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    if (!adminDb) {
+      return NextResponse.json({ error: 'Database not initialized' }, { status: 500 });
+    }
 
     const { name, username, password, venueId } = await request.json();
 
@@ -82,37 +85,42 @@ export async function POST(request: Request) {
       );
     }
 
-    const existingUser = await db.user.findUnique({
-      where: { username: username.trim().toLowerCase() },
-    });
+    const cleanUsername = username.trim().toLowerCase();
+    const existingSnap = await adminDb.collection('users').where('username', '==', cleanUsername).limit(1).get();
 
-    if (existingUser) {
+    if (!existingSnap.empty) {
       return NextResponse.json({ error: 'Username already exists' }, { status: 400 });
     }
 
     const passwordHash = await hashPassword(password);
 
-    const newJury = await db.user.create({
-      data: {
-        name: name.trim(),
-        username: username.trim().toLowerCase(),
-        passwordHash,
-        role: 'JURY',
-        venueId,
-        active: true,
-      },
-      include: { venue: true },
+    const newUserRef = await adminDb.collection('users').add({
+      name: name.trim(),
+      username: cleanUsername,
+      passwordHash,
+      role: 'JURY',
+      venueId,
+      active: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
 
+    const venueDoc = await adminDb.collection('venues').doc(venueId).get();
+    const venue = venueDoc.exists ? { id: venueDoc.id, name: venueDoc.data()?.name } : null;
+
     // Auto-assign existing teams in venue to this jury
-    const venueTeams = await db.team.findMany({ where: { venueId }, select: { id: true } });
-    for (const team of venueTeams) {
-      await db.juryTeamAssignment.create({
-        data: {
-          juryId: newJury.id,
-          teamId: team.id,
-        },
+    const venueTeamsSnap = await adminDb!.collection('teams').where('venueId', '==', venueId).get();
+    if (!venueTeamsSnap.empty) {
+      const batch = adminDb!.batch();
+      venueTeamsSnap.docs.forEach(teamDoc => {
+        const assignmentRef = adminDb!.collection('juryTeamAssignments').doc();
+        batch.set(assignmentRef, {
+          juryId: newUserRef.id,
+          teamId: teamDoc.id,
+          createdAt: new Date().toISOString(),
+        });
       });
+      await batch.commit();
     }
 
     await createAuditLog({
@@ -120,19 +128,19 @@ export async function POST(request: Request) {
       userRole: session.role,
       action: 'CREATE_JURY',
       entity: 'User',
-      entityId: newJury.id,
-      newValue: { name: newJury.name, username: newJury.username, venueId },
+      entityId: newUserRef.id,
+      newValue: JSON.stringify({ name: name.trim(), username: cleanUsername, venueId }),
     });
 
-    broadcastRealtimeEvent('JURY_UPDATED', { juryId: newJury.id });
+    broadcastRealtimeEvent('JURY_UPDATED', { juryId: newUserRef.id });
 
     return NextResponse.json({
       success: true,
       jury: {
-        id: newJury.id,
-        name: newJury.name,
-        username: newJury.username,
-        venue: newJury.venue ? { id: newJury.venue.id, name: newJury.venue.name } : null,
+        id: newUserRef.id,
+        name: name.trim(),
+        username: cleanUsername,
+        venue,
       },
     });
   } catch (error) {

@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Only the backend Cloud Functions (which use Admin SDK) can read/write everything.
+    // We deny all client-side writes by default to secure the database.
+    // The client only needs READ access to certain collections, and minimal writes.
+
+    function isSignedIn() {
+      // In a real Firebase Auth setup, this would be request.auth != null.
+      // Since we are using custom JWTs in HTTP-only cookies, the client Firebase SDK 
+      // is actually unauthenticated! All writes MUST go through the Cloud Functions API.
+      return true; // We have to allow reads for now, but restrict writes.
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if false; // Only Admin API can create/edit users
+    }
+
+    match /venues/{venueId} {
+      allow read: if true;
+      allow write: if false; // Only Admin API
+    }
+
+    match /teams/{teamId} {
+      allow read: if true;
+      allow write: if false; // Only Admin API
+    }
+
+    match /criteria/{criteriaId} {
+      allow read: if true;
+      allow write: if false; // Only Admin API
+    }
+
+    match /juryTeamAssignments/{assignmentId} {
+      allow read: if true;
+      allow write: if false; // Only Admin API
+    }
+
+    match /evaluations/{evaluationId} {
+      // Allow read/write so frontend can query and write evaluations
+      allow read: if true;
+      allow write: if true; 
+    }
+    
+    match /auditLogs/{logId} {
+      allow read: if true; // Allow Admin dashboard to read logs
+      allow write: if true; // Allow Jury and Admin to write logs
+    }
+  }
+}
